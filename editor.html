@@ -336,16 +336,16 @@
 <div class="site-footer">
   <div class="ff-plug">
     Built by the team behind
-    <a href="https://www.cradlefallgame.com/" target="_blank" rel="noopener">Cradlefall</a>
-    — a 2D babyvania in development. Follow on
+    <a href="https://www.cradlefallgame.com/" target="_blank" rel="noopener">Cradlefall</a>,
+    a 2D babyvania in development. Follow on
     <a href="https://bsky.app/profile/cradlefall.bsky.social" target="_blank" rel="noopener">Bluesky</a>
     or
     <a href="https://x.com/CradlefallDev" target="_blank" rel="noopener">X / Twitter</a>.
   </div>
   <div class="ff-license">
     All patches released under
-    <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0 (public domain)</a>
-    — use freely in any project.
+    <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0 (public domain)</a>.
+    Use freely in any project.
   </div>
 </div>
 
@@ -373,7 +373,7 @@
   // pick preset by hash
   const BLANK_PRESET = {
     name: 'New patch',
-    description: 'Start from scratch — pick a generator to begin.',
+    description: 'Start from scratch. Pick a generator to begin.',
     categories: [],
     patch: {
       version: 2, name: 'New patch',
@@ -385,7 +385,7 @@
   const preset = (presetKey === 'new') ? BLANK_PRESET : (PRESETS[presetKey] || BLANK_PRESET);
   $('title').textContent = preset.name;
   $('description').textContent = preset.description || '';
-  document.title = preset.name + ' — editor';
+  document.title = preset.name + ' · editor';
   const catChipsEl = $('catChips');
   catChipsEl.innerHTML = '';
   E.getCategories(preset).forEach(c => {
@@ -555,7 +555,7 @@
   }
   function encodeMp3(buffer, kbps) {
     if (typeof lamejs === 'undefined' || window._lamejsFailed) {
-      throw new Error('MP3 encoder (lamejs) failed to load — check your network connection.');
+      throw new Error('MP3 encoder (lamejs) failed to load. Check your network connection.');
     }
     const samples = audioBufferToInt16Mono(buffer);
     const enc = new lamejs.Mp3Encoder(1, buffer.sampleRate, kbps || 128);
@@ -1372,7 +1372,7 @@
     if (!params.modEnabled) {
       c.fillStyle = '#555'; c.font = '11px ui-monospace, monospace';
       c.textAlign = 'center';
-      c.fillText('sweep disabled — cutoff fixed at ' + params.cutoff + ' Hz', w / 2, h / 2);
+      c.fillText('sweep disabled. cutoff fixed at ' + params.cutoff + ' Hz', w / 2, h / 2);
       return;
     }
     const dur = params.modDur;

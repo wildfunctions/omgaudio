@@ -91,21 +91,13 @@
       rv(3.5, 0.5),
     ], 0.6),
 
-    shotgun: P('Shotgun blast', 'Wider, fuller boom than a pistol.', ['combat', 'impact'], [
+    machinegun: withRandom(P('Machine gun', 'Rapid-fire bursts with humanized variation.', 'combat', [
       noise('white'),
-      filter('lowpass', 3000, 1, { shape: 'ramp-down', dur: 250, depth: -2500 }),
-      env(2, 60, 250),
-      dist(100, 0.6),
-      rv(0.8, 0.3),
-    ], 0.55),
-
-    machinegun: P('Machine gun', 'Rapid-fire bursts via delay echoes.', 'combat', [
-      noise('white'),
-      filter('bandpass', 1200, 3),
-      env(1, 30, 30),
+      filter('bandpass', 1101, 2.9),
+      env(1, 30, 20),
       dist(60, 0.5),
-      dl(80, 0.85, 0.6),
-    ], 0.45),
+      dl(72, 0.21, 0.91),
+    ], 0.45), { pitch: 0.145, time: 0.1, filter: 0.11, gain: 0.125 }),
 
     cannon: P('Cannon shot', 'Deep artillery boom.', ['combat', 'impact'], [
       noise('brown'),
@@ -120,12 +112,6 @@
       filter('bandpass', 1500, 10, { shape: 'sharkfin', dur: 130, depth: 4000 }),
       env(5, 130, 80),
     ], 0.4),
-
-    arrow_hit: P('Arrow hit', 'Thud of an arrow striking wood.', ['combat', 'impact'], [
-      noise('brown'),
-      filter('bandpass', 400, 6, { shape: 'ramp-down', dur: 60, depth: 0 }),
-      env(1, 20, 90),
-    ], 0.5),
 
     sword_clash: P('Sword clash', 'High metallic ring of two blades meeting.', ['combat', 'impact'], [
       tone('triangle', [{ t: 0, freq: "C#7" }, { t: 30, freq: "E7" }, { t: 60, freq: "A6" }]),
@@ -294,8 +280,8 @@
       pp(51, 0.17, 0.33),
     ], 0.4), { pitch: 0.195, time: 0.17, filter: 0.185, gain: 0 }),
 
-    pacman: P('Pacman waka', 'Square-wave alternating low/high — "waka waka".', ['movement', 'chiptune'], [
-      tone('square', [{ t: 0, freq: "B3" }, { t: 60, freq: "B4" }, { t: 120, freq: "B3" }, { t: 180, freq: "B4" }]),
+    notification_blip: P('Notification blip', 'Quick alternating square-wave notification chime.', ['ui', 'chiptune'], [
+      tone('square', [{ t: 0, freq: 'B3' }, { t: 60, freq: 'B4' }, { t: 120, freq: 'B3' }, { t: 180, freq: 'B4' }]),
       filter('bandpass', 600, 4),
       env(1, 230, 20),
     ], 0.35),
@@ -566,10 +552,10 @@
       env(1, 100, 80),
     ], 0.3),
 
-    insect_buzz: P('Insect buzz', 'Sustained high-frequency drone.', ['ambience', 'creature'], [
-      tone('sawtooth', [{ t: 0, freq: "G3" }], 12, 30),
-      filter('bandpass', 800, 6),
-      env(50, 1500, 200),
+    insect_buzz: P('Insect buzz', 'Sustained nervous wing-flutter drone.', ['ambience', 'creature'], [
+      tone('sawtooth', [{ t: 0, freq: 'G3' }], 12.2, 37),
+      filter('bandpass', 5032, 2.5, { shape: 'ramp-up', dur: 200, depth: 1760 }),
+      env(50, 870, 200),
     ], 0.2),
 
     wave_lap: P('Wave lap', 'Soft beach wash.', 'ambience', [
@@ -817,14 +803,6 @@
       ]),
       env(1, 800, 100),
     ], 0.3),
-
-    boss_intro: P('Boss intro', 'Heavy power chord stinger.', ['game-state', 'creature'], [
-      tone('sawtooth', [{ t: 0, freq: "C2" }], 0.5, 1),
-      filter('lowpass', 800, 4),
-      env(2, 800, 400),
-      dist(100, 0.6),
-      rv(1.5, 0.4),
-    ], 0.45),
 
     insert_coin: P('Insert coin', 'Arcade attract chime.', 'game-state', [
       tone('square', [
@@ -1369,12 +1347,6 @@
       env(2, 30, 80),
     ], 0.5), { pitch: 0, time: 0.15, filter: 0.2, gain: 0.15 }),
 
-    footstep_grass_human: withRandom(P('Footstep grass (humanized)', 'Natural-feeling grass crunches.', ['footstep', 'movement'], [
-      noise('white'),
-      filter('highpass', 2500, 4),
-      env(3, 40, 100),
-    ], 0.3), { pitch: 0, time: 0.2, filter: 0.25, gain: 0.2 }),
-
     coin_random: withRandom(P('Coin (varied pickup)', 'Slight pitch variation per pickup.', 'pickup', [
       tone('square', [{ t: 0, freq: "B5" }, { t: 60, freq: "E6" }]),
       env(1, 200, 50),
@@ -1464,20 +1436,6 @@
       fm('sine', [{ t: 0, freq: 'C4' }], 2, 5, 80),
       env(1, 500, 200),
     ], 0.35),
-
-    telephone_ring: P('Telephone ring', 'Classic two-tone phone bell.', ['fm', 'ui'], [
-      fm('sine', [{ t: 0, freq: 'A4' }, { t: 50, freq: 'B4' }, { t: 100, freq: 'A4' }, { t: 150, freq: 'B4' }], 1, 2, 50),
-      filter('bandpass', 1200, 6),
-      env(1, 1200, 80),
-      dl(120, 0.5, 0.5),
-    ], 0.3),
-
-    alarm_clock: P('Alarm clock', 'Buzzy mechanical alarm.', ['fm', 'ui'], [
-      fm('square', [{ t: 0, freq: 'F#5' }], 1.05, 3, 100),
-      env(1, 800, 80),
-      dist(50, 0.4),
-      dl(150, 0.6, 0.6),
-    ], 0.3),
 
     fm_warm_pad: PV('Warm FM pad', 'Lush slow-attack pad.', ['fm', 'pad'], [
       { gain: 0.5, nodes: [fm('sine', [{ t: 0, freq: 'C3' }], 0.5, 1, 1000), env(200, 2500, 1500), ch(2, 0.005, 0.6)] },
@@ -1671,37 +1629,10 @@
       { gain: 0.5, nodes: [noise('white'), filter('highpass', 5000, 2), env(1, 5, 40)] },
     ], 0.4),
 
-    cowbell: P('Cowbell', 'FM tuned-metal cowbell.', 'drums', [
-      fm('square', [{ t: 0, freq: 'C5' }], 2.7, 4, 200),
-      env(1, 200, 200),
-    ], 0.35),
-
-    bongo_low: PV('Bongo low', 'Soft hand-drum hit.', 'drums', [
-      { gain: 0.6, nodes: [tone('sine', [{ t: 0, freq: 'F2' }, { t: 100, freq: 'A1', ramp: 'exp' }]), env(1, 80, 150)] },
-      { gain: 0.2, nodes: [noise('pink'), filter('lowpass', 600, 2), env(1, 30, 60)] },
-    ], 0.45),
-
-    bongo_high: PV('Bongo high', 'Higher hand-drum hit.', 'drums', [
-      { gain: 0.6, nodes: [tone('sine', [{ t: 0, freq: 'A2' }, { t: 100, freq: 'C2', ramp: 'exp' }]), env(1, 80, 150)] },
-      { gain: 0.2, nodes: [noise('pink'), filter('lowpass', 800, 2), env(1, 30, 60)] },
-    ], 0.45),
-
-    conga: PV('Conga', 'Latin hand-drum hit with body.', 'drums', [
-      { gain: 0.6, nodes: [tone('sine', [{ t: 0, freq: 'D2' }, { t: 150, freq: 'F1', ramp: 'exp' }]), env(1, 100, 200), dist(20, 0.3)] },
-      { gain: 0.3, nodes: [noise('pink'), filter('lowpass', 700, 2), env(1, 40, 100)] },
-    ], 0.45),
-
     clave: P('Clave', 'Sharp wood-clack.', 'drums', [
       fm('square', [{ t: 0, freq: 'C5' }], 1.5, 4, 30),
       env(1, 30, 60),
     ], 0.4),
-
-    tambourine: P('Tambourine', 'Short sizzle with slight ring.', 'drums', [
-      noise('white'),
-      filter('highpass', 5000, 4),
-      env(1, 10, 200),
-      rvX('plate', 0.5, 0.3),
-    ], 0.35),
 
     // ---------------- WAVE 3: HUMANIZED ----------------
     rain_humanized: withRandom(P('Rain (varied drops)', 'Random droplet sizes and timing.', 'ambience', [
@@ -1722,13 +1653,6 @@
       env(1, 30, 80),
       rvX('hall', 1.0, 0.4),
     ], 0.4), { pitch: 0, time: 0.4, filter: 0.4, gain: 0.4 }),
-
-    crowd_murmur: P('Crowd murmur', 'Distant low filtered chatter.', 'ambience', [
-      noise('pink'),
-      filter('bandpass', 600, 2, { shape: 'triangle', dur: 2000, depth: 300 }),
-      env(200, 2000, 800),
-      rvX('hall', 2.0, 0.5),
-    ], 0.25),
 
     // ---------------- WAVE 3: ENVIRONMENT ----------------
     wind_strong: P('Strong wind', 'Sustained gusty howl.', 'ambience', [
@@ -1766,13 +1690,6 @@
       { gain: 0.7, nodes: [noise('brown'), filter('lowpass', 800, 2, { shape: 'triangle', dur: 3500, depth: 600 }), env(500, 3000, 1500)] },
       { gain: 0.3, nodes: [noise('white'), filter('highpass', 4000, 1.5), env(500, 3000, 1500)] },
     ], 0.4),
-
-    campfire: P('Campfire', 'Crackling fire bed.', 'ambience', [
-      noise('brown'),
-      filter('bandpass', 1500, 4, { shape: 'triangle', dur: 1500, depth: 800 }),
-      env(100, 1500, 600),
-      dist(40, 0.3),
-    ], 0.3),
 
     // ---------------- WAVE 3: MUSIC BOX LULLABY ----------------
     music_box_lullaby: P('Music box (Twinkle)', 'Twinkle-Twinkle melody — child lullaby.', ['music', 'ambience'], [
@@ -1923,12 +1840,6 @@
       pp(120, 0.45, 0.5),
     ], 0.45),
 
-    lasso_swing: P('Lasso twirl', 'Cyclical overhead rope swing.', ['swing', 'movement'], [
-      noise('pink'),
-      filter('bandpass', 800, 6, { shape: 'triangle', dur: 1200, depth: 1500 }),
-      env(50, 1100, 300),
-    ], 0.35),
-
     fan_swing: P('Paper fan swing', 'Thin paper sweep.', ['swing', 'movement'], [
       noise('white'),
       filter('highpass', 3000, 4, { shape: 'sharkfin', dur: 180, depth: 2500 }),
@@ -2059,11 +1970,6 @@
       { gain: 0.6, nodes: [noise('white'), filter('bandpass', 3000, 4, { shape: 'sharkfin', dur: 80, depth: -2000 }), env(1, 30, 200), dist(100, 0.6), rvX('plate', 1.0, 0.4)] },
       { gain: 0.5, nodes: [tone('sawtooth', [{ t: 0, freq: 'C7' }, { t: 200, freq: 'A2', ramp: 'exp' }]), env(1, 200, 150), dist(60, 0.4)] },
     ], 0.45),
-
-    earth_spell: PV('Earth spell', 'Sub-rumble with cathedral impact.', ['magic', 'combat'], [
-      { gain: 0.7, nodes: [tone('sine', [{ t: 0, freq: 'A1' }, { t: 700, freq: 'D1', ramp: 'exp' }], 4, 6), env(50, 600, 500), dist(60, 0.5)] },
-      { gain: 0.5, nodes: [noise('brown'), filter('lowpass', 300, 2), env(5, 200, 800), rvX('cathedral', 2.5, 0.5)] },
-    ], 0.5),
 
     wind_spell: P('Wind spell', 'Airy spiraling whoosh with chorus.', ['magic', 'movement'], [
       noise('pink'),
@@ -2291,13 +2197,6 @@
     whispers_overlapping: PV('Overlapping whispers', 'Many voices murmuring at once.', ['horror', 'ambience', 'creature'], [
       { gain: 0.5, nodes: [noise('pink'), filter('bandpass', 1500, 8, { shape: 'triangle', dur: 1800, depth: 500 }), env(80, 1700, 500), pp(220, 0.6, 0.5)] },
       { gain: 0.4, nodes: [noise('pink'), filter('bandpass', 1200, 8, { shape: 'triangle', dur: 1800, depth: 400 }), env(120, 1700, 500), pp(310, 0.55, 0.5), rvX('cathedral', 2.5, 0.4)] },
-    ], 0.3),
-
-    distant_door_creak: P('Distant door creak', 'Far-away hinge groan in a stone hall.', ['horror', 'ambience'], [
-      noise('pink'),
-      filter('bandpass', 700, 14, { shape: 'ramp-up', dur: 1100, depth: 600 }),
-      env(80, 1000, 350),
-      rvX('cathedral', 3.5, 0.6),
     ], 0.3),
 
     paranormal_whoosh: P('Paranormal whoosh', 'Cold sudden chill — something passed by.', ['horror', 'ambience', 'magic'], [
