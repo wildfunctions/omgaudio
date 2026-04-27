@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>omgaudio — procedural game sound effects</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #15171a; color: #e8e8e8; padding: 32px 24px; max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 28px; margin: 0 0 6px; }
+  .sub { color: #888; font-size: 14px; margin-bottom: 24px; }
+  h2 { color: #8fb6ff; font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; margin: 28px 0 12px; border-bottom: 1px solid #2a2d33; padding-bottom: 4px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .card { background: #1c1f24; border: 1px solid #2a2d33; border-radius: 6px; padding: 14px 16px; transition: border-color 0.1s, transform 0.05s; }
+  .card:hover { border-color: #6cf; }
+  .card .name { font-weight: 600; font-size: 14px; margin-bottom: 4px; color: #eee; }
+  .card .desc { font-size: 12px; color: #888; margin-bottom: 12px; min-height: 32px; }
+  .card .cat-chips { margin-bottom: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+  .card .card-cat { font-size: 9px; text-transform: uppercase; letter-spacing: 0.8px; color: #ffaa55; padding: 2px 6px; background: #2a2218; border: 1px solid #3a2e1f; border-radius: 8px; }
+  .card.downvoted { opacity: 0.4; border-color: #6a3030; }
+  .card-actions button.downvote { background: #3a2222; color: #ffb0b0; padding: 6px 10px; }
+  .card-actions button.downvote:hover { background: #5a3030; }
+  .card-actions button.downvote.active { background: #a04040; color: white; }
+  #adminPanel { position: fixed; bottom: 16px; right: 16px; max-width: 360px; background: #1c1f24; border: 1px solid #6a3030; border-radius: 6px; padding: 12px; z-index: 50; box-shadow: 0 4px 16px rgba(0,0,0,0.5); display: none; }
+  #adminPanel.show { display: block; }
+  #adminPanel .panel-title { color: #ffb0b0; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; font-weight: 600; }
+  #adminPanel textarea { width: 100%; min-height: 100px; background: #0d0e10; color: #ffb0b0; border: 1px solid #3a2222; border-radius: 4px; padding: 8px; font-family: ui-monospace, monospace; font-size: 11px; box-sizing: border-box; resize: vertical; }
+  #adminPanel .panel-actions { margin-top: 8px; display: flex; gap: 6px; }
+  #adminPanel .panel-actions button { padding: 5px 10px; font-size: 11px; }
+  #adminBadge { display: none; font-size: 11px; padding: 4px 10px; background: #3a2222; color: #ffb0b0; border: 1px solid #6a3030; border-radius: 12px; margin-left: 8px; }
+  #adminBadge.show { display: inline-block; }
+  .card-actions { display: flex; gap: 8px; }
+  button, a.btn { padding: 7px 14px; font-size: 12px; background: #2a7d4f; color: white; border: 0; border-radius: 4px; cursor: pointer; font-weight: 500; text-decoration: none; display: inline-block; transition: background 0.1s, transform 0.05s; }
+  button:hover, a.btn:hover { background: #339c61; }
+  button:active, a.btn:active { transform: scale(0.97); }
+  a.btn.secondary { background: #444; }
+  a.btn.secondary:hover { background: #555; }
+  #err { display: none; background: #4a1a1a; border: 1px solid #8a3a3a; color: #ffb0b0; padding: 10px; border-radius: 4px; margin-bottom: 16px; font-family: ui-monospace, monospace; font-size: 12px; white-space: pre-wrap; }
+  .filter-bar { margin-bottom: 16px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { font-size: 11px; padding: 5px 10px; background: #2a2d33; color: #aaa; border-radius: 12px; cursor: pointer; border: 1px solid transparent; }
+  .chip:hover { color: #eee; }
+  .chip.active { background: #2a4d6a; color: #6cf; border-color: #4a6d8a; }
+  .site-footer { margin-top: 48px; padding: 18px 0; border-top: 1px solid #2a2d33; color: #777; font-size: 12px; text-align: center; line-height: 1.6; }
+  .site-footer .ff-plug { color: #aaa; margin-bottom: 6px; }
+  .site-footer .ff-plug a { color: #ffaa55; font-weight: 600; }
+  .site-footer .ff-license a { color: #888; }
+</style>
+</head>
+<body>
+<h1>omgaudio <span id="adminBadge">ADMIN</span></h1>
+<div class="sub">
+  <strong>Procedural game sound effects you can tune in your browser.</strong>
+  Every patch is built live from oscillators, noise, and filters — no recordings.
+  Click any sound to audition; <a href="#" onclick="document.querySelector('.card a.btn'); return false;">open the editor</a> on a card to tweak its parameters and export as WAV.
+  <em style="display:block;margin-top:6px;color:#777;">Free to use in any project, commercial or personal — released CC0 (public domain). No attribution required.</em>
+</div>
+<div id="err"></div>
+
+<div id="batchPanel" style="display:none; margin-bottom:14px; padding:10px 14px; background:#1c1f24; border:1px solid #2a2d33; border-radius:6px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+  <select id="batchFormat" style="background:#2a2d33; color:#eee; border:1px solid #3a3e45; padding:6px 8px; border-radius:3px; font-size:13px;">
+    <option value="wav">WAV (lossless)</option>
+    <option value="mp3">MP3 (web/compressed)</option>
+  </select>
+  <button id="batchDl" style="padding: 8px 16px;">⬇ Download <span id="batchCat">all</span> as ZIP (<span id="batchCount">0</span>)</button>
+  <span id="batchStatus" style="color:#8fffb6; font-size:12px; margin-left:12px;"></span>
+</div>
+
+<div id="adminPanel">
+  <div class="panel-title">Downvoted patches (<span id="dvCount">0</span>)</div>
+  <textarea id="dvList" readonly></textarea>
+  <div class="panel-actions">
+    <button id="dvCopy">Copy</button>
+    <button id="dvClear" class="secondary" style="background:#444;">Clear</button>
+  </div>
+</div>
+
+<div class="filter-bar" id="filterBar"></div>
+
+<h2>Sounds</h2>
+<div class="grid" id="grid"></div>
+
+<div class="site-footer">
+  <div class="ff-plug">
+    Built by the team behind
+    <a href="https://www.cradlefallgame.com/" target="_blank" rel="noopener">Cradlefall</a>
+    — a 2D babyvania in development. Follow along on
+    <a href="https://bsky.app/profile/cradlefall.bsky.social" target="_blank" rel="noopener">Bluesky</a>
+    or
+    <a href="https://x.com/CradlefallDev" target="_blank" rel="noopener">X / Twitter</a>.
+  </div>
+  <div class="ff-license">
+    All patches released under
+    <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0 (public domain)</a>
+    — use freely in any project, commercial or personal. Built procedurally with the Web Audio API.
+  </div>
+</div>
+
+<script src="https://unpkg.com/lamejs@1.2.1/lame.min.js" onerror="window._lamejsFailed=true"></script>
+<script src="engine.js"></script>
+<script src="presets.js"></script>
+<script>
+(function () {
+  'use strict';
+  const E = window.SynthEngine;
+  const PRESETS = window.PRESETS;
+  const ORDER = window.PRESET_ORDER;
+  const errBox = document.getElementById('err');
+  function showErr(e) {
+    errBox.style.display = 'block';
+    errBox.textContent = (e && (e.name + ': ' + e.message + '\n' + (e.stack || ''))) || String(e);
+  }
+  window.addEventListener('error', (ev) => showErr(ev.error || ev.message));
+
+  // shared audio context (lazy)
+  let ctx;
+  function getCtx() { return ctx || (ctx = new (window.AudioContext || window.webkitAudioContext)()); }
+
+  // ----- admin mode -----
+  const params = new URLSearchParams(location.search);
+  const adminMode = params.get('admin') === 'true';
+  const DV_KEY = 'omgaudio_downvoted';
+  let downvoted = new Set();
+  if (adminMode) {
+    try { downvoted = new Set(JSON.parse(localStorage.getItem(DV_KEY) || '[]')); } catch (_) {}
+    document.getElementById('adminBadge').classList.add('show');
+    document.getElementById('adminPanel').classList.add('show');
+    refreshDvPanel();
+  }
+  function persistDv() {
+    try { localStorage.setItem(DV_KEY, JSON.stringify([...downvoted])); } catch (_) {}
+  }
+  function refreshDvPanel() {
+    const arr = [...downvoted].sort();
+    document.getElementById('dvCount').textContent = arr.length;
+    document.getElementById('dvList').value = arr.join('\n');
+  }
+  function toggleDownvote(key, btn, card) {
+    if (downvoted.has(key)) { downvoted.delete(key); btn.classList.remove('active'); card.classList.remove('downvoted'); }
+    else { downvoted.add(key); btn.classList.add('active'); card.classList.add('downvoted'); }
+    persistDv(); refreshDvPanel();
+  }
+  if (adminMode) {
+    document.getElementById('dvCopy').onclick = async () => {
+      try { await navigator.clipboard.writeText([...downvoted].sort().join('\n')); }
+      catch (e) { showErr(e); }
+    };
+    document.getElementById('dvClear').onclick = () => {
+      if (!confirm('Clear all downvotes?')) return;
+      downvoted.clear(); persistDv(); refreshDvPanel();
+      document.querySelectorAll('.card.downvoted').forEach(c => c.classList.remove('downvoted'));
+      document.querySelectorAll('button.downvote.active').forEach(b => b.classList.remove('active'));
+    };
+  }
+
+  async function play(presetKey) {
+    try {
+      const preset = PRESETS[presetKey];
+      if (!preset) return;
+      const ac = getCtx();
+      if (ac.state === 'suspended') await ac.resume();
+      E.buildChain(ac, ac.destination, preset.patch);
+    } catch (e) { showErr(e); }
+  }
+
+  // collect all unique categories from all presets
+  const allCats = new Set();
+  ORDER.forEach(k => E.getCategories(PRESETS[k]).forEach(c => allCats.add(c)));
+  const categories = ['all', ...Array.from(allCats).sort()];
+  const filterBar = document.getElementById('filterBar');
+  // pre-select category from `#cat=…` if present
+  const hashMatch = (location.hash || '').match(/cat=([a-zA-Z0-9_\-]+)/);
+  let activeCat = (hashMatch && categories.includes(hashMatch[1])) ? hashMatch[1] : 'all';
+  categories.forEach(cat => {
+    const chip = document.createElement('span');
+    chip.className = 'chip' + (cat === activeCat ? ' active' : '');
+    chip.textContent = cat;
+    chip.onclick = () => {
+      activeCat = cat;
+      [...filterBar.children].forEach(c => c.classList.toggle('active', c.textContent === cat));
+      renderGrid();
+    };
+    filterBar.appendChild(chip);
+  });
+
+  const grid = document.getElementById('grid');
+  const batchPanel = document.getElementById('batchPanel');
+  const batchCat = document.getElementById('batchCat');
+  const batchCount = document.getElementById('batchCount');
+  const batchStatus = document.getElementById('batchStatus');
+  let visibleKeys = [];
+
+  function renderGrid() {
+    grid.innerHTML = '';
+    visibleKeys = [];
+    ORDER.forEach(key => {
+      const p = PRESETS[key]; if (!p) return;
+      const cats = E.getCategories(p);
+      if (activeCat !== 'all' && !cats.includes(activeCat)) return;
+      visibleKeys.push(key);
+      const card = document.createElement('div');
+      card.className = 'card';
+      if (downvoted.has(key)) card.classList.add('downvoted');
+      const catChips = cats.map(c => `<span class="card-cat">${c}</span>`).join(' ');
+      card.innerHTML = `
+        <div class="cat-chips">${catChips}</div>
+        <div class="name">${p.name}</div>
+        <div class="desc">${p.description || ''}</div>
+      `;
+      const actions = document.createElement('div');
+      actions.className = 'card-actions';
+      const playBtn = document.createElement('button');
+      playBtn.textContent = '▶ Play';
+      playBtn.onclick = () => play(key);
+      const editLink = document.createElement('a');
+      editLink.className = 'btn secondary';
+      editLink.href = `editor.html#${key}`;
+      editLink.textContent = 'Open editor';
+      actions.appendChild(playBtn); actions.appendChild(editLink);
+      if (adminMode) {
+        const dvBtn = document.createElement('button');
+        dvBtn.className = 'downvote' + (downvoted.has(key) ? ' active' : '');
+        dvBtn.title = 'Mark for removal';
+        dvBtn.textContent = '👎';
+        dvBtn.onclick = () => toggleDownvote(key, dvBtn, card);
+        actions.appendChild(dvBtn);
+      }
+      card.appendChild(actions);
+      grid.appendChild(card);
+    });
+    // batch panel: show when filtering OR more than ~20 visible
+    if (visibleKeys.length > 0) {
+      batchPanel.style.display = 'block';
+      batchCat.textContent = activeCat === 'all' ? 'all sounds' : activeCat;
+      batchCount.textContent = visibleKeys.length;
+    } else {
+      batchPanel.style.display = 'none';
+    }
+  }
+  renderGrid();
+
+  // ---- MP3 encoding (same logic as editor) ----
+  function mp3Available() { return !(typeof lamejs === 'undefined' || window._lamejsFailed); }
+  function bufferToInt16Mono(buffer) {
+    const ch = buffer.numberOfChannels, n = buffer.length;
+    const out = new Int16Array(n);
+    if (ch === 1) {
+      const c = buffer.getChannelData(0);
+      for (let i = 0; i < n; i++) out[i] = Math.max(-32768, Math.min(32767, c[i] * 32767));
+    } else {
+      const cs = []; for (let i = 0; i < ch; i++) cs.push(buffer.getChannelData(i));
+      for (let i = 0; i < n; i++) {
+        let s = 0; for (let c = 0; c < ch; c++) s += cs[c][i];
+        out[i] = Math.max(-32768, Math.min(32767, (s / ch) * 32767));
+      }
+    }
+    return out;
+  }
+  function encodeMp3(buffer, kbps) {
+    if (!mp3Available()) throw new Error('MP3 encoder unavailable.');
+    const samples = bufferToInt16Mono(buffer);
+    const enc = new lamejs.Mp3Encoder(1, buffer.sampleRate, kbps || 128);
+    const blockSize = 1152, chunks = [];
+    for (let i = 0; i < samples.length; i += blockSize) {
+      const slice = samples.subarray(i, i + blockSize);
+      const o = enc.encodeBuffer(slice);
+      if (o.length > 0) chunks.push(new Uint8Array(o));
+    }
+    const flush = enc.flush();
+    if (flush.length > 0) chunks.push(new Uint8Array(flush));
+    let total = 0; for (const c of chunks) total += c.length;
+    const merged = new Uint8Array(total);
+    let pos = 0; for (const c of chunks) { merged.set(c, pos); pos += c.length; }
+    return merged;
+  }
+
+  // disable MP3 option if encoder failed to load
+  setTimeout(() => {
+    if (!mp3Available()) {
+      const opt = document.getElementById('batchFormat').querySelector('option[value="mp3"]');
+      if (opt) { opt.disabled = true; opt.textContent = 'MP3 (encoder unavailable)'; }
+    }
+  }, 500);
+
+  document.getElementById('batchDl').onclick = async () => {
+    const keys = visibleKeys.slice();
+    if (!keys.length) return;
+    const dl = document.getElementById('batchDl');
+    const fmt = document.getElementById('batchFormat').value;
+    if (fmt === 'mp3' && !mp3Available()) { showErr(new Error('MP3 encoder failed to load. Pick WAV or check connection.')); return; }
+    dl.disabled = true;
+    try {
+      const entries = [];
+      for (let i = 0; i < keys.length; i++) {
+        batchStatus.textContent = `rendering ${i + 1}/${keys.length}…`;
+        const p = PRESETS[keys[i]];
+        const buf = await E.renderOffline(p.patch);
+        let bytes, ext;
+        if (fmt === 'mp3') { bytes = encodeMp3(buf, 128); ext = 'mp3'; }
+        else { bytes = new Uint8Array(E.encodeWav(buf)); ext = 'wav'; }
+        entries.push({ name: keys[i] + '.' + ext, data: bytes });
+        await new Promise(r => setTimeout(r, 0));
+      }
+      batchStatus.textContent = 'zipping…';
+      const zip = E.makeZip(entries);
+      const blob = new Blob([zip], { type: 'application/zip' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `omgaudio-${activeCat}-${keys.length}-${fmt}.zip`;
+      a.click();
+      batchStatus.textContent = `${keys.length} sounds (${fmt.toUpperCase()}) packaged`;
+      setTimeout(() => batchStatus.textContent = '', 3000);
+    } catch (e) { showErr(e); batchStatus.textContent = ''; }
+    finally { dl.disabled = false; }
+  };
+})();
+</script>
+</body>
+</html>

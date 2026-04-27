@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Sound editor</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #15171a; color: #e8e8e8; padding: 24px; max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #888; font-size: 13px; margin-bottom: 16px; }
+  h2 { color: #8fb6ff; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; margin: 24px 0 8px; border-bottom: 1px solid #2a2d33; padding-bottom: 4px; }
+  .row { display: flex; align-items: center; gap: 12px; margin: 6px 0; }
+  .row.column { flex-direction: column; align-items: stretch; }
+  label { width: 150px; font-size: 13px; color: #bbb; }
+  input[type=range] { flex: 1; accent-color: #6cf; }
+  input[type=checkbox] { accent-color: #6cf; transform: scale(1.2); margin-right: 8px; }
+  .val { width: 64px; font-family: ui-monospace, monospace; font-size: 12px; color: #8fffb6; text-align: right; }
+  select { background: #2a2d33; color: #eee; border: 1px solid #3a3e45; padding: 5px 8px; border-radius: 3px; flex: 1; }
+  button { padding: 8px 16px; font-size: 13px; background: #2a7d4f; color: white; border: 0; border-radius: 4px; cursor: pointer; font-weight: 500; transition: transform 0.05s, background 0.1s; }
+  button:hover { background: #339c61; }
+  button:active { transform: scale(0.97); background: #1f6640; }
+  button.secondary { background: #444; }
+  button.secondary:hover { background: #555; }
+  button.danger { background: #a04040; }
+  button.danger:hover { background: #b85050; }
+  button.icon { padding: 4px 8px; font-size: 12px; background: #2a2d33; color: #aaa; }
+  button.icon:hover { background: #3a3e45; color: #eee; }
+  a { color: #6cf; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  canvas { background: #0d0e10; border: 1px solid #2a2d33; border-radius: 3px; display: block; margin-top: 8px; width: 100%; }
+  canvas#filterCanvas { height: 220px; }
+  canvas.node-viz { width: 100%; height: 110px; background: #0d0e10; border: 1px solid #2a2d33; border-radius: 3px; margin-top: 10px; display: block; }
+  .viz-legend { font-size: 10px; color: #666; margin-top: 4px; }
+  #err { display: none; background: #4a1a1a; border: 1px solid #8a3a3a; color: #ffb0b0; padding: 10px; border-radius: 4px; margin-bottom: 16px; font-family: ui-monospace, monospace; font-size: 12px; white-space: pre-wrap; }
+  #status { color: #8fffb6; font-size: 12px; margin-left: 12px; align-self: center; }
+  .actions { margin-top: 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .legend { font-size: 11px; color: #666; margin-top: 4px; }
+  .node { background: #1c1f24; border: 1px solid #2a2d33; border-radius: 6px; padding: 12px 16px; margin-bottom: 6px; }
+  .node.generator { border-left: 3px solid #ffaa55; }
+  .node.effect { border-left: 3px solid #6cf; }
+  .node-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .node-title { font-weight: 600; font-size: 13px; flex: 1; color: #ddd; }
+  .node-tag { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #888; padding: 2px 6px; background: #0d0e10; border-radius: 2px; }
+  .chain-arrow { text-align: center; color: #444; font-size: 14px; height: 16px; line-height: 16px; }
+  .add-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+  .add-row select { max-width: 200px; }
+  textarea { width: 100%; background: #0d0e10; color: #8fffb6; border: 1px solid #2a2d33; border-radius: 4px; padding: 10px; font-family: ui-monospace, monospace; font-size: 12px; box-sizing: border-box; resize: vertical; }
+  textarea.preset { min-height: 140px; }
+  .row textarea { flex: 1; min-height: 60px; margin: 0; }
+  .hint { font-size: 11px; color: #666; margin-left: 162px; margin-top: -2px; margin-bottom: 6px; }
+  .controls-grid { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-start; }
+  .controls-grid > .row { flex-basis: 100%; margin: 4px 0; }
+  .controls-grid > .fm-note { flex-basis: 100%; background: #3a2a1a; border: 1px solid #6a4a2a; color: #ffd596; padding: 8px 12px; border-radius: 4px; font-size: 12px; line-height: 1.45; }
+  .knob-cell { display: flex; flex-direction: column; align-items: center; padding: 2px; min-width: 76px; }
+  .knob-cell .knob-label { font-size: 11px; color: #aaa; margin-bottom: 4px; text-align: center; max-width: 90px; line-height: 1.2; }
+  .knob-cell svg.knob { cursor: ns-resize; user-select: none; touch-action: none; display: block; }
+  .knob-cell svg.knob:hover circle.knob-body { fill: #232830; }
+  .knob-cell .knob-val { font-size: 11px; color: #8fffb6; font-family: ui-monospace, monospace; margin-top: 4px; min-height: 14px; }
+  .knob-cell.master { padding: 6px 12px; background: #1c1f24; border: 1px solid #2a2d33; border-radius: 6px; }
+  .voice { background: #161920; border: 1px solid #2a2d33; border-left: 3px solid #ffaa55; border-radius: 6px; padding: 12px 14px; margin-bottom: 12px; }
+  .voice-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #2a2d33; }
+  .voice-tag { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #ffaa55; padding: 3px 8px; background: #0d0e10; border-radius: 2px; font-weight: 600; }
+  .voice-title { font-weight: 600; font-size: 13px; color: #ddd; flex: 1; }
+  .voice .add-row { margin-top: 6px; gap: 6px; }
+  .voice .add-row select, .voice .add-row button { font-size: 12px; padding: 5px 10px; }
+  .voice .node { background: #1c1f24; }
+  #topbar { position: sticky; top: 0; z-index: 20; background: #15171a; padding: 10px 0 12px; margin-bottom: 8px; border-bottom: 1px solid #2a2d33; }
+  #topbar canvas { height: 200px; margin-top: 6px; }
+  #topbar .topbar-label { color: #8fb6ff; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; }
+  .breadcrumb { font-size: 12px; color: #888; margin-bottom: 6px; }
+  .cat-chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 6px; }
+  .cat-chips .card-cat { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: #ffaa55; padding: 3px 8px; background: #2a2218; border: 1px solid #3a2e1f; border-radius: 10px; text-decoration: none; }
+  .cat-chips a.card-cat:hover { background: #3a2e1f; }
+  .site-footer { margin-top: 40px; padding: 18px 0; border-top: 1px solid #2a2d33; color: #777; font-size: 12px; text-align: center; line-height: 1.6; }
+  .site-footer .ff-plug { color: #aaa; margin-bottom: 6px; }
+  .site-footer .ff-plug a { color: #ffaa55; font-weight: 600; }
+  .site-footer .ff-license a { color: #888; }
+</style>
+</head>
+<body>
+<div class="breadcrumb"><a href="index.html">← All sounds</a></div>
+<h1 id="title">Sound editor</h1>
+<div class="cat-chips" id="catChips"></div>
+<div class="sub" id="description"></div>
+<div id="err"></div>
+
+<div id="topbar">
+  <div class="actions">
+    <button id="play">▶ Play</button>
+    <button id="playVariations" class="secondary" title="Play 5 variations. Uses your Randomization knob settings, or applies mild auto-jitter if all are zero.">▶ Play 5 variations</button>
+    <span style="display:flex; align-items:center; gap:4px;">
+      <select id="exportFormat" style="padding:5px 8px; font-size:13px;">
+        <option value="wav">WAV (lossless)</option>
+        <option value="mp3">MP3 (web/compressed)</option>
+      </select>
+      <button id="export" class="secondary">Export</button>
+      <button id="exportVariations" class="secondary" title="Render 10 variations as a ZIP. Uses your Randomization knob settings, or applies mild auto-jitter if all are zero.">Export 10 variations (ZIP)</button>
+    </span>
+    <label id="loopTagLabel" style="font-size:11px; color:#aaa; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="loopTag" style="margin:0;">loop-tag (WAV only)</label>
+    <button id="reset" class="danger">↺ Reset to default</button>
+    <span id="status"></span>
+  </div>
+  <div class="topbar-label">Spectrum / filter response</div>
+  <canvas id="filterCanvas" width="1200" height="280"></canvas>
+  <div class="legend"><span style="color:#446">━</span> first filter @ base &nbsp; <span style="color:#6cf">━</span> first filter @ peak &nbsp; <span style="color:#8fffb6">━</span> live spectrum</div>
+</div>
+
+<h2>Chain</h2>
+<div id="chain"></div>
+<div class="add-row">
+  <button id="addVoice">+ Add voice (parallel)</button>
+</div>
+
+<h2>Output</h2>
+<div id="masterMount"></div>
+
+<h2>Randomization (per-trigger)</h2>
+<div class="sub">Each play jitters params by these amounts. 0 = exact replay; 0.05 = ±5%. Great for footsteps, gunshots, hi-hats.</div>
+<div id="randomMount" class="controls-grid"></div>
+
+<h2>Patch JSON</h2>
+<div class="sub">Auto-updates as you tweak. Copy to save your patch; paste &amp; click Apply to load one. Frequencies accept Hz numbers or note names ("A4", "C#5", "Bb3").</div>
+<textarea id="preset" class="preset" spellcheck="false"></textarea>
+<div class="actions" style="margin-top: 10px">
+  <button id="apply">Apply patch</button>
+  <button id="copyPreset" class="secondary">Copy to clipboard</button>
+</div>
+
+<div class="site-footer">
+  <div class="ff-plug">
+    Built by the team behind
+    <a href="https://www.cradlefallgame.com/" target="_blank" rel="noopener">Cradlefall</a>
+    — a 2D babyvania in development. Follow on
+    <a href="https://bsky.app/profile/cradlefall.bsky.social" target="_blank" rel="noopener">Bluesky</a>
+    or
+    <a href="https://x.com/CradlefallDev" target="_blank" rel="noopener">X / Twitter</a>.
+  </div>
+  <div class="ff-license">
+    All patches released under
+    <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0 (public domain)</a>
+    — use freely in any project.
+  </div>
+</div>
+
+<script src="https://unpkg.com/lamejs@1.2.1/lame.min.js" onerror="window._lamejsFailed=true"></script>
+<script src="engine.js"></script>
+<script src="presets.js"></script>
+<script>
+(function () {
+  'use strict';
+  const E = window.SynthEngine;
+  const PRESETS = window.PRESETS;
+  const $ = (id) => document.getElementById(id);
+  const errBox = $('err'), statusEl = $('status');
+
+  function showErr(e) {
+    errBox.style.display = 'block';
+    let msg = '';
+    if (e && (e.name || e.message)) msg += (e.name || 'Error') + ': ' + (e.message || '') + '\n';
+    if (e && e.stack) msg += e.stack;
+    errBox.textContent = msg || String(e);
+  }
+  window.addEventListener('error', (ev) => showErr(ev.error || ev.message));
+  window.addEventListener('unhandledrejection', (ev) => showErr(ev.reason));
+
+  // pick preset by hash
+  const presetKey = (location.hash || '#swoosh').slice(1);
+  const preset = PRESETS[presetKey] || PRESETS.swoosh;
+  $('title').textContent = preset.name;
+  $('description').textContent = preset.description || '';
+  document.title = preset.name + ' — editor';
+  const catChipsEl = $('catChips');
+  catChipsEl.innerHTML = '';
+  E.getCategories(preset).forEach(c => {
+    const a = document.createElement('a');
+    a.className = 'card-cat';
+    a.href = `index.html#cat=${encodeURIComponent(c)}`;
+    a.textContent = c;
+    catChipsEl.appendChild(a);
+  });
+  const DEFAULT_PATCH = preset.patch;
+
+  function normalizePatch(p) {
+    if (!p) return p;
+    if (Array.isArray(p.voices)) return p;
+    if (Array.isArray(p.nodes)) {
+      const np = E.clonePatch(p);
+      np.voices = [{ gain: 1, nodes: np.nodes }];
+      delete np.nodes;
+      return np;
+    }
+    return p;
+  }
+  let patch = normalizePatch(E.clonePatch(DEFAULT_PATCH));
+
+  // ---- audio ----
+  let ctx, analyser, specBins;
+  function getCtx() {
+    if (!ctx) {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = ctx.createAnalyser();
+      analyser.fftSize = 2048; analyser.smoothingTimeConstant = 0.6;
+      analyser.minDecibels = -90; analyser.maxDecibels = -10;
+      specBins = new Float32Array(analyser.frequencyBinCount);
+      analyser.connect(ctx.destination);
+      startVizLoop();
+    }
+    return ctx;
+  }
+
+  let lastPlayStart = 0, lastPlayDur = 0;
+  $('play').addEventListener('click', async () => {
+    try {
+      const ac = getCtx();
+      if (ac.state === 'suspended') await ac.resume();
+      const { totalDur, t0 } = E.buildChain(ac, analyser, patch);
+      lastPlayStart = t0; lastPlayDur = totalDur;
+      statusEl.textContent = 'playing…';
+      setTimeout(() => statusEl.textContent = '', Math.max(800, totalDur * 1000));
+    } catch (e) { showErr(e); }
+  });
+
+  function safeName() { return (patch.name || preset.name || 'sound').replace(/[^a-z0-9]+/gi, '-').toLowerCase(); }
+
+  // ---- format-aware export ----
+  function mp3Available() { return !(typeof lamejs === 'undefined' || window._lamejsFailed); }
+  function selectedFormat() {
+    const f = $('exportFormat').value;
+    if (f === 'mp3' && !mp3Available()) {
+      throw new Error('MP3 encoder failed to load. Switch to WAV, or check network and reload.');
+    }
+    return f;
+  }
+  async function renderOneEncoded() {
+    const buf = await E.renderOffline(patch);
+    const fmt = selectedFormat();
+    if (fmt === 'mp3') return { ext: 'mp3', mime: 'audio/mpeg', bytes: encodeMp3(buf, 128) };
+    return { ext: 'wav', mime: 'audio/wav', bytes: new Uint8Array(E.encodeWav(buf, { loop: $('loopTag').checked })) };
+  }
+  function downloadBytes(bytes, name, mime) {
+    const blob = new Blob([bytes], { type: mime });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  }
+  // disable loop-tag checkbox when MP3 selected
+  function refreshLoopTagEnabled() {
+    const wavSelected = $('exportFormat').value === 'wav';
+    $('loopTag').disabled = !wavSelected;
+    $('loopTagLabel').style.opacity = wavSelected ? '1' : '0.4';
+  }
+  $('exportFormat').addEventListener('change', refreshLoopTagEnabled);
+  refreshLoopTagEnabled();
+
+  $('export').addEventListener('click', async () => {
+    try {
+      const { ext, mime, bytes } = await renderOneEncoded();
+      downloadBytes(bytes, `${safeName()}.${ext}`, mime);
+    } catch (e) { showErr(e); }
+  });
+
+  // If patch has no randomization configured, apply sensible defaults so variations actually differ.
+  // Returns { patch, applied } where `applied` is true when defaults were injected.
+  function effectiveRandomPatch(p) {
+    const r = p.random;
+    const hasRandom = r && (r.pitch || r.time || r.filter || r.gain);
+    if (hasRandom) return { patch: p, applied: false };
+    const np = E.clonePatch(p);
+    // Higher defaults so variations are clearly audible even on fast wide-sweep patches
+    // (small pitch jitter is masked by big exponential sweeps like the laser).
+    np.random = { pitch: 0.15, time: 0.10, filter: 0.15, gain: 0.08 };
+    return { patch: np, applied: true };
+  }
+
+  // ---- play variations ----
+  $('playVariations').addEventListener('click', async () => {
+    try {
+      const ac = getCtx();
+      if (ac.state === 'suspended') await ac.resume();
+      const { patch: pp, applied } = effectiveRandomPatch(patch);
+      const N = 5;
+      let baseDelay = 0;
+      for (let i = 0; i < N; i++) {
+        const { totalDur, t0 } = E.buildChain(ac, analyser, pp);
+        if (i === 0) lastPlayStart = t0, lastPlayDur = totalDur;
+        baseDelay = Math.min(2.0, totalDur) * 1000 + 80;
+        statusEl.textContent = applied ? `variation ${i + 1}/${N} (auto-jitter)…` : `variation ${i + 1}/${N}…`;
+        if (i < N - 1) await new Promise(r => setTimeout(r, baseDelay));
+      }
+      setTimeout(() => statusEl.textContent = '', 1500);
+    } catch (e) { showErr(e); }
+  });
+
+  // ---- export variations as ZIP (uses selected format; auto-jitter if no random set) ----
+  $('exportVariations').addEventListener('click', async () => {
+    const N = 10;
+    const btn = $('exportVariations');
+    btn.disabled = true;
+    try {
+      const fmt = selectedFormat();
+      const loop = $('loopTag').checked;
+      const { patch: pp, applied } = effectiveRandomPatch(patch);
+      const entries = [];
+      for (let i = 0; i < N; i++) {
+        statusEl.textContent = `rendering ${i + 1}/${N}${applied ? ' (auto-jitter)' : ''}…`;
+        const buf = await E.renderOffline(pp);
+        let bytes, ext;
+        if (fmt === 'mp3') { bytes = encodeMp3(buf, 128); ext = 'mp3'; }
+        else { bytes = new Uint8Array(E.encodeWav(buf, { loop })); ext = 'wav'; }
+        entries.push({ name: `${safeName()}-var-${String(i + 1).padStart(2, '0')}.${ext}`, data: bytes });
+        await new Promise(r => setTimeout(r, 0));
+      }
+      const zip = E.makeZip(entries);
+      downloadBytes(zip, `${safeName()}-${N}-variations.zip`, 'application/zip');
+      statusEl.textContent = `${N} variations (${fmt.toUpperCase()}) exported`;
+      setTimeout(() => statusEl.textContent = '', 2000);
+    } catch (e) { showErr(e); }
+    finally { btn.disabled = false; }
+  });
+
+  // ---- export MP3 (lamejs) ----
+  function audioBufferToInt16Mono(buffer) {
+    const ch = buffer.numberOfChannels;
+    const n = buffer.length;
+    const out = new Int16Array(n);
+    if (ch === 1) {
+      const c = buffer.getChannelData(0);
+      for (let i = 0; i < n; i++) out[i] = Math.max(-32768, Math.min(32767, c[i] * 32767));
+    } else {
+      const cs = [];
+      for (let i = 0; i < ch; i++) cs.push(buffer.getChannelData(i));
+      for (let i = 0; i < n; i++) {
+        let s = 0;
+        for (let c = 0; c < ch; c++) s += cs[c][i];
+        out[i] = Math.max(-32768, Math.min(32767, (s / ch) * 32767));
+      }
+    }
+    return out;
+  }
+  function encodeMp3(buffer, kbps) {
+    if (typeof lamejs === 'undefined' || window._lamejsFailed) {
+      throw new Error('MP3 encoder (lamejs) failed to load — check your network connection.');
+    }
+    const samples = audioBufferToInt16Mono(buffer);
+    const enc = new lamejs.Mp3Encoder(1, buffer.sampleRate, kbps || 128);
+    const blockSize = 1152;
+    const chunks = [];
+    for (let i = 0; i < samples.length; i += blockSize) {
+      const slice = samples.subarray(i, i + blockSize);
+      const out = enc.encodeBuffer(slice);
+      if (out.length > 0) chunks.push(new Uint8Array(out));
+    }
+    const flush = enc.flush();
+    if (flush.length > 0) chunks.push(new Uint8Array(flush));
+    let total = 0;
+    for (const c of chunks) total += c.length;
+    const merged = new Uint8Array(total);
+    let pos = 0;
+    for (const c of chunks) { merged.set(c, pos); pos += c.length; }
+    return merged;
+  }
+  // disable MP3 option in dropdown if lamejs failed to load
+  setTimeout(() => {
+    if (!mp3Available()) {
+      const opt = $('exportFormat').querySelector('option[value="mp3"]');
+      if (opt) { opt.disabled = true; opt.textContent = 'MP3 (encoder unavailable)'; }
+    }
+  }, 500);
+
+  $('reset').addEventListener('click', () => {
+    patch = normalizePatch(E.clonePatch(DEFAULT_PATCH));
+    renderChain();
+    mountMasterKnob();
+    mountRandomKnobs();
+    onPatchChange();
+    statusEl.textContent = 'reset to default'; setTimeout(() => statusEl.textContent = '', 1200);
+  });
+
+  // ---- chain UI ----
+  const chainEl = $('chain');
+  let nodeVizDrawFns = [];
+
+  function renderChain() {
+    chainEl.innerHTML = '';
+    nodeVizDrawFns = [];
+    patch.voices.forEach((voice, vIdx) => chainEl.appendChild(renderVoice(voice, vIdx)));
+  }
+
+  function renderVoice(voice, vIdx) {
+    const wrap = document.createElement('div');
+    wrap.className = 'voice';
+
+    const header = document.createElement('div');
+    header.className = 'voice-header';
+    const tag = document.createElement('span');
+    tag.className = 'voice-tag'; tag.textContent = 'VOICE ' + (vIdx + 1);
+    header.appendChild(tag);
+    const title = document.createElement('span');
+    title.className = 'voice-title'; title.textContent = (voice.name || '');
+    header.appendChild(title);
+
+    // voice gain knob
+    const gKnob = makeKnob({
+      min: 0, max: 1, step: 0.01, value: voice.gain != null ? voice.gain : 1,
+      label: 'voice gain',
+      onChange: (v) => { voice.gain = v; onPatchChange(); },
+    });
+    header.appendChild(gKnob.element);
+
+    if (patch.voices.length > 1) {
+      const rm = btn('× remove voice', () => removeVoice(vIdx), false);
+      rm.style.marginLeft = '8px';
+      header.appendChild(rm);
+    }
+    wrap.appendChild(header);
+
+    voice.nodes.forEach((node, idx) => {
+      const def = E.NODE_DEFS[node.type];
+      if (!def) return;
+      const card = document.createElement('div');
+      card.className = 'node ' + (def.kind === 'generator' ? 'generator' : 'effect');
+
+      const nh = document.createElement('div');
+      nh.className = 'node-header';
+      nh.innerHTML = `<span class="node-tag">${def.kind}</span><span class="node-title">${def.label}</span>`;
+      const isGen = def.kind === 'generator';
+      const upBtn = btn('▲', () => moveNode(voice, idx, -1), isGen || idx <= 1);
+      const dnBtn = btn('▼', () => moveNode(voice, idx, 1), isGen || idx >= voice.nodes.length - 1);
+      const rmBtn = btn('×', () => removeNode(voice, idx), isGen);
+      [upBtn, dnBtn, rmBtn].forEach(b => nh.appendChild(b));
+      card.appendChild(nh);
+
+      const grid = document.createElement('div');
+      grid.className = 'controls-grid';
+      def.ui().forEach(ctrl => grid.appendChild(renderControl(node.params, ctrl)));
+      card.appendChild(grid);
+
+      if (node.type === 'envelope' || node.type === 'filter' || node.type === 'tone') {
+        const cv = document.createElement('canvas');
+        cv.width = 1200; cv.height = 110;
+        cv.className = 'node-viz';
+        card.appendChild(cv);
+        const legend = document.createElement('div');
+        legend.className = 'viz-legend';
+        if (node.type === 'envelope') legend.innerHTML = '<span style="color:#6cf">━</span> amp gain over time &nbsp; <span style="color:#ffeb3b">┃</span> playhead';
+        else if (node.type === 'filter') legend.innerHTML = '<span style="color:#8fffb6">━</span> cutoff sweep (Hz vs time) &nbsp; <span style="color:#ffeb3b">┃</span> playhead';
+        else if (node.type === 'tone') legend.innerHTML = '<span style="color:#ffaa55">━</span> frequency points (Hz vs time) &nbsp; <span style="color:#ffeb3b">┃</span> playhead';
+        card.appendChild(legend);
+        if (node.type === 'envelope') nodeVizDrawFns.push(() => drawEnvelopeViz(cv, node.params));
+        else if (node.type === 'filter') nodeVizDrawFns.push(() => drawFilterSweepViz(cv, node.params));
+        else if (node.type === 'tone') nodeVizDrawFns.push(() => drawToneViz(cv, node.params));
+      }
+      wrap.appendChild(card);
+
+      if (idx < voice.nodes.length - 1) {
+        const arrow = document.createElement('div');
+        arrow.className = 'chain-arrow'; arrow.textContent = '↓';
+        wrap.appendChild(arrow);
+      }
+    });
+
+    // per-voice add row
+    const addRow = document.createElement('div');
+    addRow.className = 'add-row';
+    const hasGenerator = voice.nodes.length > 0;
+
+    const swapSel = document.createElement('select');
+    const blank = document.createElement('option');
+    blank.value = ''; blank.textContent = hasGenerator ? 'Change generator…' : '➤ Pick generator to start…';
+    swapSel.appendChild(blank);
+    ['noise', 'tone', 'fm'].forEach(t => {
+      const o = document.createElement('option'); o.value = t; o.textContent = E.NODE_DEFS[t].label;
+      swapSel.appendChild(o);
+    });
+    if (!hasGenerator) swapSel.style.borderColor = '#ffaa55';
+    swapSel.onchange = (e) => {
+      const t = e.target.value; if (!t) return;
+      const def = E.NODE_DEFS[t]; if (!def || def.kind !== 'generator') { e.target.value = ''; return; }
+      voice.nodes[0] = { type: t, params: E.clonePatch(def.defaults) };
+      e.target.value = '';
+      renderChain(); onPatchChange();
+    };
+    addRow.appendChild(swapSel);
+
+    if (hasGenerator) {
+      const sel = document.createElement('select');
+      Object.entries(E.NODE_DEFS).forEach(([k, def]) => {
+        if (def.kind !== 'effect') return;
+        const opt = document.createElement('option');
+        opt.value = k; opt.textContent = def.label;
+        sel.appendChild(opt);
+      });
+      const addBtn = document.createElement('button');
+      addBtn.textContent = '+ Add effect';
+      addBtn.onclick = () => addEffect(voice, sel.value);
+      addRow.appendChild(sel); addRow.appendChild(addBtn);
+    }
+    wrap.appendChild(addRow);
+
+    return wrap;
+  }
+
+  function moveNode(voice, idx, delta) {
+    const j = idx + delta;
+    if (j < 1 || j >= voice.nodes.length || idx < 1) return;
+    [voice.nodes[idx], voice.nodes[j]] = [voice.nodes[j], voice.nodes[idx]];
+    renderChain(); onPatchChange();
+  }
+  function removeNode(voice, idx) {
+    if (idx === 0) return;
+    voice.nodes.splice(idx, 1);
+    renderChain(); onPatchChange();
+  }
+  function addEffect(voice, type) {
+    const def = E.NODE_DEFS[type]; if (!def || def.kind === 'generator') return;
+    voice.nodes.push({ type, params: E.clonePatch(def.defaults) });
+    renderChain(); onPatchChange();
+  }
+  function removeVoice(vIdx) {
+    if (patch.voices.length <= 1) return;
+    patch.voices.splice(vIdx, 1);
+    renderChain(); onPatchChange();
+  }
+  function addVoice() {
+    patch.voices.push({ gain: 0.5, nodes: [] });
+    renderChain(); onPatchChange();
+  }
+  $('addVoice').addEventListener('click', addVoice);
+
+  function btn(label, onClick, hidden) {
+    const b = document.createElement('button');
+    b.className = 'icon'; b.textContent = label; b.onclick = onClick;
+    if (hidden) b.style.visibility = 'hidden';
+    return b;
+  }
+
+  // ---- knob ----
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  function arcPath(cx, cy, r, a1, a2) {
+    const sa = (a1 - 90) * Math.PI / 180, ea = (a2 - 90) * Math.PI / 180;
+    const x1 = cx + r * Math.cos(sa), y1 = cy + r * Math.sin(sa);
+    const x2 = cx + r * Math.cos(ea), y2 = cy + r * Math.sin(ea);
+    const large = Math.abs(a2 - a1) > 180 ? 1 : 0;
+    const sweep = a2 >= a1 ? 1 : 0;
+    return `M ${x1} ${y1} A ${r} ${r} 0 ${large} ${sweep} ${x2} ${y2}`;
+  }
+  function formatKnobValue(v, step, max) {
+    if (step != null && step < 1) {
+      const decimals = Math.min(4, Math.max(0, -Math.floor(Math.log10(step))));
+      return v.toFixed(decimals);
+    }
+    if (Math.abs(max) >= 1000) return Math.round(v).toString();
+    return Math.round(v).toString();
+  }
+  function makeKnob(opts) {
+    const { min, max, step, value, label, onChange } = opts;
+    const cell = document.createElement('div');
+    cell.className = 'knob-cell';
+    if (opts.master) cell.classList.add('master');
+
+    const lblEl = document.createElement('div');
+    lblEl.className = 'knob-label'; lblEl.textContent = label;
+    cell.appendChild(lblEl);
+
+    const SIZE = 56, R = 22, CX = SIZE / 2, CY = SIZE / 2;
+    const A_MIN = -135, A_MAX = 135;
+
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('width', SIZE); svg.setAttribute('height', SIZE);
+    svg.setAttribute('viewBox', `0 0 ${SIZE} ${SIZE}`);
+    svg.classList.add('knob');
+
+    const bg = document.createElementNS(SVG_NS, 'path');
+    bg.setAttribute('d', arcPath(CX, CY, R, A_MIN, A_MAX));
+    bg.setAttribute('stroke', '#2a2d33'); bg.setAttribute('stroke-width', 4);
+    bg.setAttribute('fill', 'none'); bg.setAttribute('stroke-linecap', 'round');
+
+    const fg = document.createElementNS(SVG_NS, 'path');
+    fg.setAttribute('stroke', '#6cf'); fg.setAttribute('stroke-width', 4);
+    fg.setAttribute('fill', 'none'); fg.setAttribute('stroke-linecap', 'round');
+
+    const body = document.createElementNS(SVG_NS, 'circle');
+    body.setAttribute('cx', CX); body.setAttribute('cy', CY); body.setAttribute('r', R - 6);
+    body.setAttribute('fill', '#1c1f24'); body.setAttribute('stroke', '#3a3e45'); body.setAttribute('stroke-width', 1);
+    body.classList.add('knob-body');
+
+    const ind = document.createElementNS(SVG_NS, 'line');
+    ind.setAttribute('x1', CX); ind.setAttribute('y1', CY - (R - 8));
+    ind.setAttribute('x2', CX); ind.setAttribute('y2', CY - (R - 14));
+    ind.setAttribute('stroke', '#6cf'); ind.setAttribute('stroke-width', 2.5);
+    ind.setAttribute('stroke-linecap', 'round');
+
+    svg.appendChild(bg); svg.appendChild(fg); svg.appendChild(body); svg.appendChild(ind);
+    cell.appendChild(svg);
+
+    const valEl = document.createElement('div');
+    valEl.className = 'knob-val';
+    cell.appendChild(valEl);
+
+    const initial = value;
+    let val = value;
+
+    function update() {
+      const t = (val - min) / (max - min);
+      const angle = A_MIN + t * (A_MAX - A_MIN);
+      fg.setAttribute('d', arcPath(CX, CY, R, A_MIN, angle));
+      ind.setAttribute('transform', `rotate(${angle} ${CX} ${CY})`);
+      valEl.textContent = formatKnobValue(val, step, max);
+    }
+
+    function setVal(nv) {
+      nv = Math.max(min, Math.min(max, nv));
+      if (step != null) nv = Math.round(nv / step) * step;
+      if (nv !== val) { val = nv; update(); onChange(val); }
+    }
+
+    let dragging = false, startY = 0, startVal = 0;
+    svg.addEventListener('pointerdown', (e) => {
+      dragging = true; startY = e.clientY; startVal = val;
+      try { svg.setPointerCapture(e.pointerId); } catch (_) {}
+      e.preventDefault();
+    });
+    svg.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const dy = startY - e.clientY;
+      const fine = e.shiftKey ? 0.2 : 1;
+      const range = max - min;
+      setVal(startVal + (dy / 200) * range * fine);
+    });
+    const stop = (e) => { dragging = false; try { svg.releasePointerCapture(e.pointerId); } catch (_) {} };
+    svg.addEventListener('pointerup', stop);
+    svg.addEventListener('pointercancel', stop);
+    svg.addEventListener('dblclick', () => setVal(initial));
+    svg.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const fine = e.shiftKey ? 0.1 : 1;
+      const inc = (step != null ? step : (max - min) * 0.01) * (e.deltaY > 0 ? -1 : 1) * fine;
+      setVal(val + inc);
+    }, { passive: false });
+
+    update();
+    return { element: cell, set: (v) => { val = v; update(); } };
+  }
+
+  function renderControl(params, ctrl) {
+    if (ctrl.type === 'note') {
+      const note = document.createElement('div');
+      note.className = 'fm-note';
+      note.textContent = ctrl.text;
+      return note;
+    }
+    if (ctrl.type === 'range') {
+      const knob = makeKnob({
+        min: ctrl.min, max: ctrl.max, step: ctrl.step != null ? ctrl.step : 1,
+        value: params[ctrl.key], label: ctrl.label,
+        onChange: (v) => { params[ctrl.key] = v; onPatchChange(); },
+      });
+      return knob.element;
+    }
+    const row = document.createElement('div');
+    row.className = 'row';
+    const lbl = document.createElement('label');
+    lbl.textContent = ctrl.label;
+    row.appendChild(lbl);
+    if (ctrl.type === 'select') {
+      const sel = document.createElement('select');
+      ctrl.options.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o; opt.textContent = o;
+        if (params[ctrl.key] === o) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      sel.addEventListener('change', () => { params[ctrl.key] = sel.value; onPatchChange(); });
+      row.appendChild(sel);
+    } else if (ctrl.type === 'checkbox') {
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.checked = !!params[ctrl.key];
+      cb.addEventListener('change', () => { params[ctrl.key] = cb.checked; onPatchChange(); });
+      const wrap = document.createElement('div'); wrap.style.flex = '1'; wrap.appendChild(cb);
+      row.appendChild(wrap);
+    } else if (ctrl.type === 'jsonarea') {
+      row.className = 'row column';
+      const top = document.createElement('div');
+      top.style.display = 'flex'; top.style.alignItems = 'center'; top.style.width = '100%'; top.style.marginBottom = '4px';
+      top.appendChild(lbl);
+      if (ctrl.hint) {
+        const h = document.createElement('span');
+        h.style.color = '#666'; h.style.fontSize = '11px'; h.style.marginLeft = '8px';
+        h.textContent = ctrl.hint;
+        top.appendChild(h);
+      }
+      row.innerHTML = ''; row.appendChild(top);
+      const ta = document.createElement('textarea');
+      ta.value = JSON.stringify(params[ctrl.key], null, 0).replace(/},{/g, '},\n{');
+      ta.style.minHeight = (ctrl.height || 80) + 'px';
+      ta.addEventListener('change', () => {
+        try { params[ctrl.key] = JSON.parse(ta.value); onPatchChange(); }
+        catch (e) { showErr(e); }
+      });
+      row.appendChild(ta);
+    }
+    return row;
+  }
+
+  // ---- preset I/O ----
+  const presetEl = $('preset');
+  function syncPresetTextarea() { presetEl.value = JSON.stringify(patch, null, 2); }
+  $('apply').addEventListener('click', () => {
+    try {
+      const p = JSON.parse(presetEl.value);
+      if (!p || !p.output) throw new Error('preset missing output');
+      const np = normalizePatch(p);
+      if (!Array.isArray(np.voices) || !np.voices.length) throw new Error('preset has no voices');
+      for (const v of np.voices) {
+        if (!Array.isArray(v.nodes)) throw new Error('voice missing nodes');
+        for (const n of v.nodes) if (!E.NODE_DEFS[n.type]) throw new Error('unknown node type: ' + n.type);
+      }
+      patch = np;
+      renderChain();
+      mountMasterKnob();
+      mountRandomKnobs();
+      onPatchChange();
+      statusEl.textContent = 'patch applied'; setTimeout(() => statusEl.textContent = '', 1200);
+    } catch (e) { showErr(e); }
+  });
+  $('copyPreset').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(presetEl.value);
+      statusEl.textContent = 'copied'; setTimeout(() => statusEl.textContent = '', 1000);
+    } catch (e) { showErr(e); }
+  });
+
+  // ---- output gain (master knob) ----
+  let masterKnob;
+  function mountMasterKnob() {
+    const mount = $('masterMount');
+    mount.innerHTML = '';
+    masterKnob = makeKnob({
+      min: 0, max: 1, step: 0.01,
+      value: patch.output.gain, label: 'Master gain', master: true,
+      onChange: (v) => { patch.output.gain = v; onPatchChange(); },
+    });
+    mount.appendChild(masterKnob.element);
+  }
+  mountMasterKnob();
+
+  // ---- randomization knobs ----
+  function ensureRandom() { if (!patch.random) patch.random = { pitch: 0, time: 0, filter: 0, gain: 0 }; }
+  function mountRandomKnobs() {
+    ensureRandom();
+    const mount = $('randomMount');
+    mount.innerHTML = '';
+    const fields = [
+      { key: 'pitch', label: 'Pitch jitter' },
+      { key: 'time', label: 'Time jitter' },
+      { key: 'filter', label: 'Filter cutoff jitter' },
+      { key: 'gain', label: 'Gain jitter' },
+    ];
+    for (const f of fields) {
+      const k = makeKnob({
+        min: 0, max: 0.5, step: 0.005,
+        value: patch.random[f.key] || 0, label: f.label,
+        onChange: (v) => { patch.random[f.key] = v; onPatchChange(); },
+      });
+      mount.appendChild(k.element);
+    }
+  }
+  mountRandomKnobs();
+
+  function onPatchChange() {
+    syncPresetTextarea();
+    drawFilterResponse();
+    drawAllNodeVizs();
+  }
+  function drawAllNodeVizs() { for (const fn of nodeVizDrawFns) fn(); }
+
+  // ---- visualizers ----
+  const filterCv = $('filterCanvas');
+  const respFreqs = new Float32Array(512);
+  const respMags = new Float32Array(512);
+  const respPhases = new Float32Array(512);
+
+  function drawFilterResponse() {
+    const c = filterCv.getContext('2d');
+    const w = filterCv.width, h = filterCv.height;
+    c.clearRect(0, 0, w, h);
+    const sr = ctx ? ctx.sampleRate : 48000;
+    const minF = 20, maxF = sr / 2;
+    const fToX = f => (Math.log(Math.max(minF, f) / minF) / Math.log(maxF / minF)) * w;
+    const dbToY = (db) => h - ((db + 40) / 60) * h;
+
+    c.strokeStyle = '#1f2228'; c.lineWidth = 1; c.beginPath();
+    [50, 100, 500, 1000, 5000, 10000].forEach(f => { const x = fToX(f); c.moveTo(x, 0); c.lineTo(x, h); });
+    [-40, -20, 0, 20].forEach(db => { const y = dbToY(db); c.moveTo(0, y); c.lineTo(w, y); });
+    c.stroke();
+    c.fillStyle = '#555'; c.font = '11px ui-monospace, monospace';
+    [['100', 100], ['1k', 1000], ['10k', 10000]].forEach(([lbl, f]) => c.fillText(lbl, fToX(f) + 3, h - 4));
+    c.fillText('+20dB', 4, dbToY(20) + 11);
+    c.fillText('0dB', 4, dbToY(0) - 2);
+    c.fillText('-20dB', 4, dbToY(-20) - 2);
+
+    for (let i = 0; i < respFreqs.length; i++) respFreqs[i] = minF * Math.pow(maxF / minF, i / (respFreqs.length - 1));
+
+    const filt = E.findFirst(patch, 'filter');
+    if (filt) {
+      const ac = ctx || new OfflineAudioContext(1, 1, 48000);
+      const tmp = ac.createBiquadFilter();
+      tmp.type = filt.params.type; tmp.Q.value = filt.params.q;
+      const drawCurve = (cutoffHz, color, lw) => {
+        tmp.frequency.value = Math.max(1, cutoffHz);
+        tmp.getFrequencyResponse(respFreqs, respMags, respPhases);
+        c.strokeStyle = color; c.lineWidth = lw; c.beginPath();
+        for (let i = 0; i < respFreqs.length; i++) {
+          const x = fToX(respFreqs[i]);
+          const db = 20 * Math.log10(Math.max(1e-6, respMags[i]));
+          const y = dbToY(Math.max(-40, Math.min(20, db)));
+          if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
+        }
+        c.stroke();
+      };
+      const base = filt.params.cutoff;
+      const peak = base + (filt.params.modEnabled ? filt.params.modDepth : 0);
+      drawCurve(base, '#446688', 1.5);
+      if (filt.params.modEnabled) drawCurve(peak, '#6cf', 2);
+      c.strokeStyle = 'rgba(108, 204, 255, 0.4)'; c.setLineDash([3, 3]);
+      [base, peak].forEach(f => { const x = fToX(Math.max(minF, f)); c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); });
+      c.setLineDash([]);
+    } else {
+      c.fillStyle = '#555'; c.textAlign = 'center';
+      c.fillText('no filter in chain', w / 2, h / 2);
+      c.textAlign = 'left';
+    }
+
+    if (analyser) {
+      analyser.getFloatFrequencyData(specBins);
+      const specMin = analyser.minDecibels, specMax = analyser.maxDecibels;
+      c.strokeStyle = 'rgba(143, 255, 182, 0.85)'; c.lineWidth = 1;
+      c.beginPath();
+      let started = false;
+      for (let i = 1; i < specBins.length; i++) {
+        const f = (i / specBins.length) * (sr / 2);
+        if (f < minF) continue;
+        const x = fToX(f);
+        const dbNorm = (specBins[i] - specMin) / (specMax - specMin);
+        const y = h - Math.max(0, Math.min(1, dbNorm)) * h;
+        if (!started) { c.moveTo(x, y); started = true; } else c.lineTo(x, y);
+      }
+      c.stroke();
+    }
+  }
+
+  function _frameAndGrid(c, w, h, padL, padR, padT, padB, total) {
+    c.strokeStyle = '#1f2228'; c.lineWidth = 1;
+    c.strokeRect(padL, padT, w - padL - padR, h - padT - padB);
+    c.strokeStyle = '#181b20';
+    const plotW = w - padL - padR, plotH = h - padT - padB;
+    for (let t = 100; t < total; t += 100) {
+      const x = padL + (t / total) * plotW;
+      c.beginPath(); c.moveTo(x, padT); c.lineTo(x, padT + plotH); c.stroke();
+    }
+  }
+  function _playhead(c, padL, padR, padT, padB, w, h, total) {
+    if (!ctx || lastPlayDur <= 0) return;
+    const elapsedMs = (ctx.currentTime - lastPlayStart) * 1000;
+    if (elapsedMs < 0 || elapsedMs > total) return;
+    const plotW = w - padL - padR, plotH = h - padT - padB;
+    const x = padL + (elapsedMs / total) * plotW;
+    c.strokeStyle = '#ffeb3b'; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(x, padT); c.lineTo(x, padT + plotH); c.stroke();
+  }
+
+  function drawEnvelopeViz(canvas, params) {
+    const c = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    c.clearRect(0, 0, w, h);
+    const atk = params.attack, hold = params.hold, rel = params.release;
+    const total = Math.max(1, atk + hold + rel);
+    const padL = 50, padR = 12, padT = 10, padB = 22;
+    const plotW = w - padL - padR, plotH = h - padT - padB;
+    const tToX = ms => padL + (ms / total) * plotW;
+    _frameAndGrid(c, w, h, padL, padR, padT, padB, total);
+
+    const baseY = padT + plotH - 2;
+    const topY = padT + 2;
+    c.fillStyle = 'rgba(108, 204, 255, 0.18)';
+    c.strokeStyle = '#6cf'; c.lineWidth = 1.5;
+    c.beginPath();
+    c.moveTo(tToX(0), baseY);
+    c.lineTo(tToX(atk), topY);
+    c.lineTo(tToX(atk + hold), topY);
+    c.lineTo(tToX(atk + hold + rel), baseY);
+    c.closePath(); c.fill(); c.stroke();
+
+    c.fillStyle = '#888'; c.font = '10px ui-monospace, monospace';
+    c.textAlign = 'right';
+    c.fillText('1.0', padL - 4, padT + 9);
+    c.fillText('0.0', padL - 4, baseY + 4);
+    c.textAlign = 'center';
+    c.fillText('0', padL, padT + plotH + 14);
+    c.fillText('atk ' + atk, tToX(atk), padT + plotH + 14);
+    c.fillText(total + 'ms', padL + plotW, padT + plotH + 14);
+
+    _playhead(c, padL, padR, padT, padB, w, h, total);
+  }
+
+  function drawFilterSweepViz(canvas, params) {
+    const c = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    c.clearRect(0, 0, w, h);
+    if (!params.modEnabled) {
+      c.fillStyle = '#555'; c.font = '11px ui-monospace, monospace';
+      c.textAlign = 'center';
+      c.fillText('sweep disabled — cutoff fixed at ' + params.cutoff + ' Hz', w / 2, h / 2);
+      return;
+    }
+    const dur = params.modDur;
+    const base = params.cutoff;
+    const peak = base + params.modDepth;
+    const minF = Math.min(base, peak), maxF = Math.max(base, peak);
+    const padL = 60, padR = 12, padT = 10, padB = 22;
+    const plotW = w - padL - padR, plotH = h - padT - padB;
+    const tToX = ms => padL + (ms / dur) * plotW;
+    _frameAndGrid(c, w, h, padL, padR, padT, padB, dur);
+
+    const curve = E.shapeCurve(params.modShape, 256);
+    c.strokeStyle = '#8fffb6'; c.lineWidth = 2;
+    c.beginPath();
+    for (let i = 0; i < curve.length; i++) {
+      const t = (i / (curve.length - 1)) * dur;
+      const x = tToX(t);
+      const f = base + curve[i] * params.modDepth;
+      const ny = (f - minF) / Math.max(1, maxF - minF);
+      const y = padT + plotH - ny * plotH;
+      if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
+    }
+    c.stroke();
+
+    c.fillStyle = '#888'; c.font = '10px ui-monospace, monospace';
+    c.textAlign = 'right';
+    c.fillText(maxF + ' Hz', padL - 4, padT + 9);
+    c.fillText(minF + ' Hz', padL - 4, padT + plotH);
+    c.textAlign = 'center';
+    c.fillText('0', padL, padT + plotH + 14);
+    c.fillText(dur + 'ms', padL + plotW, padT + plotH + 14);
+
+    _playhead(c, padL, padR, padT, padB, w, h, dur);
+  }
+
+  function drawToneViz(canvas, params) {
+    const c = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    c.clearRect(0, 0, w, h);
+    const pts = Array.isArray(params.points) ? params.points : [];
+    if (!pts.length) {
+      c.fillStyle = '#555'; c.font = '11px ui-monospace, monospace';
+      c.textAlign = 'center';
+      c.fillText('no frequency points', w / 2, h / 2);
+      return;
+    }
+    const total = Math.max(1, pts[pts.length - 1].t || 1);
+    let minF = Infinity, maxF = -Infinity;
+    for (const p of pts) {
+      const f = E.freqOf(p.freq);
+      if (f < minF) minF = f; if (f > maxF) maxF = f;
+    }
+    if (minF === maxF) { minF *= 0.7; maxF *= 1.3; }
+    const padL = 60, padR = 12, padT = 10, padB = 22;
+    const plotW = w - padL - padR, plotH = h - padT - padB;
+    const tToX = ms => padL + (ms / total) * plotW;
+    const fToY = f => padT + plotH - ((f - minF) / Math.max(1, maxF - minF)) * plotH;
+    _frameAndGrid(c, w, h, padL, padR, padT, padB, total);
+
+    c.strokeStyle = '#ffaa55'; c.lineWidth = 2;
+    c.beginPath();
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i], x = tToX(p.t || 0), y = fToY(E.freqOf(p.freq));
+      const ramp = p.ramp || 'step';
+      if (i === 0) c.moveTo(x, y);
+      else if (ramp === 'step') {
+        const prev = pts[i - 1];
+        c.lineTo(tToX(p.t), fToY(E.freqOf(prev.freq)));
+        c.lineTo(x, y);
+      } else c.lineTo(x, y);
+    }
+    c.stroke();
+    c.fillStyle = '#ffaa55';
+    for (const p of pts) { c.beginPath(); c.arc(tToX(p.t || 0), fToY(E.freqOf(p.freq)), 3, 0, Math.PI * 2); c.fill(); }
+
+    c.fillStyle = '#888'; c.font = '10px ui-monospace, monospace';
+    c.textAlign = 'right';
+    c.fillText(Math.round(maxF) + ' Hz', padL - 4, padT + 9);
+    c.fillText(Math.round(minF) + ' Hz', padL - 4, padT + plotH);
+    c.textAlign = 'center';
+    c.fillText('0', padL, padT + plotH + 14);
+    c.fillText(total + 'ms', padL + plotW, padT + plotH + 14);
+
+    _playhead(c, padL, padR, padT, padB, w, h, total);
+  }
+
+  let vizRunning = false;
+  function startVizLoop() {
+    if (vizRunning) return; vizRunning = true;
+    function tick() { drawFilterResponse(); drawAllNodeVizs(); requestAnimationFrame(tick); }
+    tick();
+  }
+
+  // ---- init ----
+  renderChain();
+  syncPresetTextarea();
+  drawFilterResponse();
+  drawAllNodeVizs();
+})();
+</script>
+</body>
+</html>
