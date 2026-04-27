@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0a0b0e"/>
+      <stop offset="1" stop-color="#14161a"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.30" cy="0.40" r="0.55">
+      <stop offset="0" stop-color="#2dd4bf" stop-opacity="0.20"/>
+      <stop offset="1" stop-color="#2dd4bf" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+
+  <!-- brand mark -->
+  <text x="72" y="118" fill="#2dd4bf"
+        font-family="-apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Helvetica, Arial, sans-serif"
+        font-size="32" font-weight="600" letter-spacing="1">◐ omgaudio</text>
+
+  <!-- hero title -->
+  <text x="72" y="300" fill="#ededed"
+        font-family="-apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Helvetica, Arial, sans-serif"
+        font-size="96" font-weight="800" letter-spacing="-3">Procedural game</text>
+  <text x="72" y="400" fill="#9a9aa1"
+        font-family="-apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Helvetica, Arial, sans-serif"
+        font-size="96" font-weight="800" letter-spacing="-3">sound effects.</text>
+
+  <!-- tagline -->
+  <text x="72" y="478" fill="#9a9aa1"
+        font-family="-apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Helvetica, Arial, sans-serif"
+        font-size="30" font-weight="400">Free patches you can tune in your browser. CC0, no signup.</text>
+
+  <!-- decorative waveform across the bottom -->
+  <path d="M 0 565 Q 50 520, 100 565 T 200 565 Q 250 530, 300 565 T 400 565 Q 450 540, 500 565 T 600 565 Q 650 525, 700 565 T 800 565 Q 850 535, 900 565 T 1000 565 Q 1050 530, 1100 565 T 1200 565"
+        stroke="#2dd4bf" stroke-width="3" fill="none" opacity="0.55"/>
+</svg>
