@@ -173,6 +173,7 @@
   }
   .card-actions { display: flex; gap: 6px; }
   .card-actions .btn { padding: 7px 14px; font-size: 12px; }
+  .card-actions .btn.card-dl:hover { color: var(--primary); border-color: var(--primary); }
 
   /* admin */
   .card.downvoted { opacity: 0.4; border-color: #6a3030; }
@@ -407,11 +408,18 @@
       playBtn.className = 'btn btn-primary';
       playBtn.textContent = '▶ Play';
       playBtn.onclick = () => play(key);
+      const dlBtn = document.createElement('button');
+      dlBtn.className = 'btn btn-secondary card-dl';
+      dlBtn.textContent = 'Download';
+      dlBtn.title = 'Download in selected format';
+      dlBtn.onclick = () => downloadOne(key, dlBtn);
       const editLink = document.createElement('a');
       editLink.className = 'btn btn-secondary';
       editLink.href = `editor.html#${key}`;
       editLink.textContent = 'Open editor';
-      actions.appendChild(playBtn); actions.appendChild(editLink);
+      actions.appendChild(playBtn);
+      actions.appendChild(editLink);
+      actions.appendChild(dlBtn);
       if (adminMode) {
         const dvBtn = document.createElement('button');
         dvBtn.className = 'btn downvote' + (downvoted.has(key) ? ' active' : '');
@@ -473,6 +481,27 @@
       if (opt) { opt.disabled = true; opt.textContent = 'MP3 (encoder unavailable)'; }
     }
   }, 500);
+
+  async function downloadOne(key, btnEl) {
+    const fmt = document.getElementById('batchFormat').value;
+    if (fmt === 'mp3' && !mp3Available()) {
+      showErr(new Error('MP3 encoder failed to load. Switch to WAV.')); return;
+    }
+    if (btnEl) btnEl.disabled = true;
+    try {
+      const p = PRESETS[key]; if (!p) return;
+      const buf = await E.renderOffline(p.patch);
+      let bytes, ext, mime;
+      if (fmt === 'mp3') { bytes = encodeMp3(buf, 128); ext = 'mp3'; mime = 'audio/mpeg'; }
+      else { bytes = new Uint8Array(E.encodeWav(buf)); ext = 'wav'; mime = 'audio/wav'; }
+      const blob = new Blob([bytes], { type: mime });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${key}.${ext}`;
+      a.click();
+    } catch (e) { showErr(e); }
+    finally { if (btnEl) btnEl.disabled = false; }
+  }
 
   document.getElementById('batchDl').onclick = async () => {
     const keys = visibleKeys.slice();
