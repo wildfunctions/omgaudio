@@ -1680,6 +1680,13 @@
       rvX('cathedral', 4.0, 0.5),
     ], 0.45),
 
+    lightning_distant: withRandom(P('Distant lightning', 'Faraway flash and rolling rumble across the sky.', ['ambience', 'horror'], [
+      noise('brown'),
+      filter('bandpass', 448, 1.6, { shape: 'sharkfin', dur: 633, depth: 400 }),
+      env(30, 575, 1025),
+      pp(200, 0.3, 0.07),
+    ], 0.6), { pitch: 0.35, time: 0.03, filter: 0.055, gain: 0.115 }),
+
     creek_stream: P('Creek stream', 'Babbling-water white-noise wash.', 'ambience', [
       noise('white'),
       filter('bandpass', 2500, 4, { shape: 'triangle', dur: 2500, depth: 1000 }),
