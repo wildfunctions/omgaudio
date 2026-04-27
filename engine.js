@@ -151,12 +151,16 @@
   }
 
   function makeDistortionCurve(amount) {
-    const k = amount, n = 1024;
+    // tanh soft-clipping with drive. As amount increases, drive grows and
+    // the curve approaches a square wave; output is normalized to ±1 so the
+    // wet path stays audible vs the dry path.
+    const n = 2048;
     const curve = new Float32Array(n);
-    const deg = Math.PI / 180;
+    const drive = 1 + Math.max(0, amount) * 0.2;
+    const norm = 1 / Math.tanh(drive);
     for (let i = 0; i < n; i++) {
-      const x = (i * 2) / n - 1;
-      curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
+      const x = (i * 2) / (n - 1) - 1;
+      curve[i] = Math.tanh(drive * x) * norm;
     }
     return curve;
   }
@@ -181,7 +185,7 @@
       kind: 'generator',
       defaults: {
         waveform: 'sine',
-        points: [{ t: 0, freq: 440 }],
+        points: [{ t: 0, freq: 'A4' }],
         modRatio: 1,
         modIndex: 5,
         modDecay: 300,
@@ -202,7 +206,7 @@
         const modGain = ac.createGain();
         modGain.gain.value = 0;
         mod.connect(modGain).connect(carrier.frequency);
-        const points = Array.isArray(p.points) && p.points.length ? p.points : [{ t: 0, freq: 440 }];
+        const points = Array.isArray(p.points) && p.points.length ? p.points : [{ t: 0, freq: 'A4' }];
         return {
           in: null, out: carrier,
           start: t => { carrier.start(t); mod.start(t); },
@@ -248,7 +252,7 @@
       kind: 'generator',
       defaults: {
         waveform: 'square',
-        points: [{ t: 0, freq: 440 }],
+        points: [{ t: 0, freq: 'A4' }],
         vibratoRate: 0,
         vibratoDepth: 0,
       },

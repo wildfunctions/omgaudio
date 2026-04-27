@@ -1,80 +1,257 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<title>omgaudio — procedural game sound effects</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>omgaudio — procedural game sound effects, free for any project</title>
+<meta name="description" content="Procedural game sound effects you can tune in your browser. Free CC0 patches, exportable as WAV or MP3.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  body { font-family: system-ui, sans-serif; background: #15171a; color: #e8e8e8; padding: 32px 24px; max-width: 960px; margin: 0 auto; }
-  h1 { font-size: 28px; margin: 0 0 6px; }
-  .sub { color: #888; font-size: 14px; margin-bottom: 24px; }
-  h2 { color: #8fb6ff; font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; margin: 28px 0 12px; border-bottom: 1px solid #2a2d33; padding-bottom: 4px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
-  .card { background: #1c1f24; border: 1px solid #2a2d33; border-radius: 6px; padding: 14px 16px; transition: border-color 0.1s, transform 0.05s; }
-  .card:hover { border-color: #6cf; }
-  .card .name { font-weight: 600; font-size: 14px; margin-bottom: 4px; color: #eee; }
-  .card .desc { font-size: 12px; color: #888; margin-bottom: 12px; min-height: 32px; }
-  .card .cat-chips { margin-bottom: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
-  .card .card-cat { font-size: 9px; text-transform: uppercase; letter-spacing: 0.8px; color: #ffaa55; padding: 2px 6px; background: #2a2218; border: 1px solid #3a2e1f; border-radius: 8px; }
+  :root {
+    --accent-cyan: #6cccff;
+    --accent-green: #8fffb6;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+    --radius: 8px;
+    --radius-lg: 12px;
+    --radius-pill: 999px;
+
+    /* default — Mint (Linear-inspired: neutral cool dark + saturated teal) */
+    --bg: #0a0b0e;
+    --bg-elevated: #14161a;
+    --bg-card: #1b1d22;
+    --border: #25272d;
+    --border-strong: #353941;
+    --text: #ededed;
+    --text-muted: #9a9aa1;
+    --text-faint: #606069;
+    --primary: #2dd4bf;
+    --primary-bright: #5eead4;
+    --primary-bg: rgba(45, 212, 191, 0.10);
+    --primary-border: rgba(45, 212, 191, 0.28);
+    --primary-fg: #032420;
+    --viz-bg: #07080b;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    margin: 0 auto;
+    padding: 24px;
+    max-width: 1080px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { color: var(--primary-bright); text-decoration: underline; }
+
+  /* ----- hero ----- */
+  .hero { position: relative; padding: 48px 0 24px; }
+  .hero::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse 700px 280px at 25% 40%, var(--primary-bg), transparent 70%);
+    pointer-events: none; z-index: -1;
+  }
+  .brand-mark {
+    font-size: 13px; font-weight: 600; color: var(--primary);
+    letter-spacing: 0.4px; margin-bottom: 12px;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .brand-mark::before { content: '◐'; font-size: 16px; }
+  .hero-title {
+    font-size: 52px; font-weight: 700; letter-spacing: -1.2px;
+    line-height: 1.05; margin: 0 0 16px;
+    color: var(--text);
+    background: linear-gradient(180deg, var(--text) 0%, var(--text-muted) 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero-sub {
+    font-size: 18px; color: var(--text-muted);
+    line-height: 1.55; margin: 0 0 28px; max-width: 620px;
+  }
+  .hero-sub strong { color: var(--text); font-weight: 600; }
+  .hero-aside {
+    font-size: 14px; font-style: italic; color: var(--text-faint);
+    line-height: 1.55; margin: -12px 0 28px; max-width: 580px;
+  }
+  .hero-cta { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* ----- buttons ----- */
+  .btn {
+    font-family: inherit; font-weight: 600; font-size: 13px;
+    padding: 10px 18px; border-radius: var(--radius);
+    border: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    text-decoration: none; transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-primary { background: var(--primary); color: var(--primary-fg); }
+  .btn-primary:hover { background: var(--primary-bright); text-decoration: none; transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border-strong); }
+  .btn-ghost:hover { border-color: var(--primary); color: var(--primary); text-decoration: none; }
+  .btn-secondary { background: var(--bg-elevated); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--bg-card); border-color: var(--border-strong); text-decoration: none; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ----- section headings ----- */
+  h2 {
+    font-size: 12px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--text-muted);
+    margin: 36px 0 14px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ----- filter chips ----- */
+  .filter-bar {
+    margin: 20px 0; display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .chip {
+    font-size: 12px; font-weight: 500; padding: 6px 12px;
+    background: var(--bg-elevated); color: var(--text-muted);
+    border-radius: var(--radius-pill); cursor: pointer;
+    border: 1px solid var(--border); transition: all 0.1s;
+    text-transform: lowercase;
+  }
+  .chip:hover { color: var(--text); border-color: var(--border-strong); }
+  .chip.active { background: var(--primary-bg); color: var(--primary); border-color: var(--primary-border); }
+
+  /* ----- batch panel ----- */
+  #batchPanel {
+    display: none; margin-bottom: 16px; padding: 12px 16px;
+    background: var(--bg-elevated); border: 1px solid var(--border);
+    border-radius: var(--radius);
+    align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  #batchPanel select {
+    background: var(--bg-card); color: var(--text); border: 1px solid var(--border);
+    padding: 7px 10px; border-radius: var(--radius); font-size: 13px; font-family: inherit;
+    cursor: pointer;
+  }
+  #batchStatus { color: var(--accent-green); font-size: 12px; }
+
+  /* ----- grid + cards ----- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 20px;
+    transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+    display: flex; flex-direction: column;
+  }
+  .card:hover { border-color: var(--primary-border); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .card .name { font-weight: 600; font-size: 15px; margin-bottom: 4px; color: var(--text); letter-spacing: -0.2px; }
+  .card .desc { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; min-height: 38px; line-height: 1.45; flex: 1; }
+  .card .cat-chips { margin-bottom: 8px; display: flex; flex-wrap: wrap; gap: 4px; }
+  .card .card-cat {
+    font-size: 9.5px; font-weight: 500; padding: 3px 8px;
+    background: var(--primary-bg); color: var(--primary);
+    border: 1px solid var(--primary-border); border-radius: var(--radius-pill);
+    text-transform: lowercase; letter-spacing: 0.3px;
+  }
+  .card-actions { display: flex; gap: 6px; }
+  .card-actions .btn { padding: 7px 14px; font-size: 12px; }
+
+  /* admin */
   .card.downvoted { opacity: 0.4; border-color: #6a3030; }
-  .card-actions button.downvote { background: #3a2222; color: #ffb0b0; padding: 6px 10px; }
+  .card-actions button.downvote { background: #3a2222; color: #ffb0b0; border: 1px solid #5a3030; }
   .card-actions button.downvote:hover { background: #5a3030; }
   .card-actions button.downvote.active { background: #a04040; color: white; }
-  #adminPanel { position: fixed; bottom: 16px; right: 16px; max-width: 360px; background: #1c1f24; border: 1px solid #6a3030; border-radius: 6px; padding: 12px; z-index: 50; box-shadow: 0 4px 16px rgba(0,0,0,0.5); display: none; }
+  #adminPanel {
+    position: fixed; bottom: 16px; right: 16px; max-width: 360px;
+    background: var(--bg-card); border: 1px solid #6a3030; border-radius: var(--radius);
+    padding: 14px; z-index: 50; box-shadow: var(--shadow-lg); display: none;
+  }
   #adminPanel.show { display: block; }
   #adminPanel .panel-title { color: #ffb0b0; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; font-weight: 600; }
-  #adminPanel textarea { width: 100%; min-height: 100px; background: #0d0e10; color: #ffb0b0; border: 1px solid #3a2222; border-radius: 4px; padding: 8px; font-family: ui-monospace, monospace; font-size: 11px; box-sizing: border-box; resize: vertical; }
+  #adminPanel textarea {
+    width: 100%; min-height: 100px; background: var(--bg);
+    color: #ffb0b0; border: 1px solid #3a2222; border-radius: 4px;
+    padding: 8px; font-family: ui-monospace, monospace; font-size: 11px;
+    box-sizing: border-box; resize: vertical;
+  }
   #adminPanel .panel-actions { margin-top: 8px; display: flex; gap: 6px; }
-  #adminPanel .panel-actions button { padding: 5px 10px; font-size: 11px; }
-  #adminBadge { display: none; font-size: 11px; padding: 4px 10px; background: #3a2222; color: #ffb0b0; border: 1px solid #6a3030; border-radius: 12px; margin-left: 8px; }
+  #adminPanel .panel-actions button { padding: 6px 12px; font-size: 11px; }
+  #adminBadge {
+    display: none; font-size: 10px; padding: 4px 10px; background: #3a2222;
+    color: #ffb0b0; border: 1px solid #6a3030; border-radius: var(--radius-pill);
+    margin-left: 10px; vertical-align: middle; font-weight: 600;
+    letter-spacing: 1px;
+  }
   #adminBadge.show { display: inline-block; }
-  .card-actions { display: flex; gap: 8px; }
-  button, a.btn { padding: 7px 14px; font-size: 12px; background: #2a7d4f; color: white; border: 0; border-radius: 4px; cursor: pointer; font-weight: 500; text-decoration: none; display: inline-block; transition: background 0.1s, transform 0.05s; }
-  button:hover, a.btn:hover { background: #339c61; }
-  button:active, a.btn:active { transform: scale(0.97); }
-  a.btn.secondary { background: #444; }
-  a.btn.secondary:hover { background: #555; }
-  #err { display: none; background: #4a1a1a; border: 1px solid #8a3a3a; color: #ffb0b0; padding: 10px; border-radius: 4px; margin-bottom: 16px; font-family: ui-monospace, monospace; font-size: 12px; white-space: pre-wrap; }
-  .filter-bar { margin-bottom: 16px; display: flex; gap: 6px; flex-wrap: wrap; }
-  .chip { font-size: 11px; padding: 5px 10px; background: #2a2d33; color: #aaa; border-radius: 12px; cursor: pointer; border: 1px solid transparent; }
-  .chip:hover { color: #eee; }
-  .chip.active { background: #2a4d6a; color: #6cf; border-color: #4a6d8a; }
-  .site-footer { margin-top: 48px; padding: 18px 0; border-top: 1px solid #2a2d33; color: #777; font-size: 12px; text-align: center; line-height: 1.6; }
-  .site-footer .ff-plug { color: #aaa; margin-bottom: 6px; }
-  .site-footer .ff-plug a { color: #ffaa55; font-weight: 600; }
-  .site-footer .ff-license a { color: #888; }
+
+  /* error */
+  #err {
+    display: none; background: #2a1414; border: 1px solid #6a3030;
+    color: #ffb0b0; padding: 12px 16px; border-radius: var(--radius);
+    margin-bottom: 20px; font-family: ui-monospace, monospace;
+    font-size: 12px; white-space: pre-wrap;
+  }
+
+  /* footer */
+  .site-footer {
+    margin-top: 56px; padding: 24px 0; border-top: 1px solid var(--border);
+    color: var(--text-faint); font-size: 13px; text-align: center; line-height: 1.6;
+  }
+  .site-footer .ff-plug { color: var(--text-muted); margin-bottom: 8px; }
+  .site-footer .ff-plug a { color: var(--primary); font-weight: 600; }
+  .site-footer .ff-license { font-size: 12px; }
+  .site-footer .ff-license a { color: var(--text-muted); }
+
+  /* responsive */
+  @media (max-width: 600px) {
+    body { padding: 16px; }
+    .hero { padding: 28px 0 16px; }
+    .hero-title { font-size: 36px; letter-spacing: -0.8px; }
+    .hero-sub { font-size: 16px; }
+    .grid { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
-<h1>omgaudio <span id="adminBadge">ADMIN</span></h1>
-<div class="sub">
-  <strong>Procedural game sound effects you can tune in your browser.</strong>
-  Every patch is built live from oscillators, noise, and filters — no recordings.
-  Click any sound to audition; <a href="#" onclick="document.querySelector('.card a.btn'); return false;">open the editor</a> on a card to tweak its parameters and export as WAV.
-  <em style="display:block;margin-top:6px;color:#777;">Free to use in any project, commercial or personal — released CC0 (public domain). No attribution required.</em>
-</div>
-<div id="err"></div>
 
-<div id="batchPanel" style="display:none; margin-bottom:14px; padding:10px 14px; background:#1c1f24; border:1px solid #2a2d33; border-radius:6px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-  <select id="batchFormat" style="background:#2a2d33; color:#eee; border:1px solid #3a3e45; padding:6px 8px; border-radius:3px; font-size:13px;">
-    <option value="wav">WAV (lossless)</option>
-    <option value="mp3">MP3 (web/compressed)</option>
-  </select>
-  <button id="batchDl" style="padding: 8px 16px;">⬇ Download <span id="batchCat">all</span> as ZIP (<span id="batchCount">0</span>)</button>
-  <span id="batchStatus" style="color:#8fffb6; font-size:12px; margin-left:12px;"></span>
-</div>
+<header class="hero">
+  <div class="brand-mark">omgaudio<span id="adminBadge">ADMIN</span></div>
+  <h1 class="hero-title">Procedural game<br>sound effects.</h1>
+  <p class="hero-sub">
+    Free patches you can tune in your browser. Every sound is generated live from oscillators, noise, and filters. <strong>No recordings.</strong> Released <strong>CC0</strong>: use freely in any project, commercial or personal.
+  </p>
+  <p class="hero-aside">
+    Familiar with sound design? The editor should feel intuitive. New to it? Just open a sound you like and twist some knobs. You can't break anything.
+  </p>
+  <div class="hero-cta">
+    <a href="#sounds" class="btn btn-primary">Browse sounds ↓</a>
+    <a href="editor.html#new" class="btn btn-ghost">Open the editor →</a>
+  </div>
+</header>
+
+<div id="err"></div>
 
 <div id="adminPanel">
   <div class="panel-title">Downvoted patches (<span id="dvCount">0</span>)</div>
   <textarea id="dvList" readonly></textarea>
   <div class="panel-actions">
-    <button id="dvCopy">Copy</button>
-    <button id="dvClear" class="secondary" style="background:#444;">Clear</button>
+    <button id="dvCopy" class="btn btn-secondary">Copy</button>
+    <button id="dvClear" class="btn btn-secondary">Clear</button>
   </div>
 </div>
 
+<h2 id="sounds">Sounds</h2>
+
 <div class="filter-bar" id="filterBar"></div>
 
-<h2>Sounds</h2>
+<div id="batchPanel">
+  <select id="batchFormat">
+    <option value="wav">WAV (lossless)</option>
+    <option value="mp3">MP3 (web/compressed)</option>
+  </select>
+  <button id="batchDl" class="btn btn-primary">⬇ Download <span id="batchCat">all</span> as ZIP (<span id="batchCount">0</span>)</button>
+  <span id="batchStatus"></span>
+</div>
+
 <div class="grid" id="grid"></div>
 
 <div class="site-footer">
@@ -165,6 +342,7 @@
   ORDER.forEach(k => E.getCategories(PRESETS[k]).forEach(c => allCats.add(c)));
   const categories = ['all', ...Array.from(allCats).sort()];
   const filterBar = document.getElementById('filterBar');
+
   // pre-select category from `#cat=…` if present
   const hashMatch = (location.hash || '').match(/cat=([a-zA-Z0-9_\-]+)/);
   let activeCat = (hashMatch && categories.includes(hashMatch[1])) ? hashMatch[1] : 'all';
@@ -207,16 +385,17 @@
       const actions = document.createElement('div');
       actions.className = 'card-actions';
       const playBtn = document.createElement('button');
+      playBtn.className = 'btn btn-primary';
       playBtn.textContent = '▶ Play';
       playBtn.onclick = () => play(key);
       const editLink = document.createElement('a');
-      editLink.className = 'btn secondary';
+      editLink.className = 'btn btn-secondary';
       editLink.href = `editor.html#${key}`;
       editLink.textContent = 'Open editor';
       actions.appendChild(playBtn); actions.appendChild(editLink);
       if (adminMode) {
         const dvBtn = document.createElement('button');
-        dvBtn.className = 'downvote' + (downvoted.has(key) ? ' active' : '');
+        dvBtn.className = 'btn downvote' + (downvoted.has(key) ? ' active' : '');
         dvBtn.title = 'Mark for removal';
         dvBtn.textContent = '👎';
         dvBtn.onclick = () => toggleDownvote(key, dvBtn, card);
@@ -225,9 +404,8 @@
       card.appendChild(actions);
       grid.appendChild(card);
     });
-    // batch panel: show when filtering OR more than ~20 visible
     if (visibleKeys.length > 0) {
-      batchPanel.style.display = 'block';
+      batchPanel.style.display = 'flex';
       batchCat.textContent = activeCat === 'all' ? 'all sounds' : activeCat;
       batchCount.textContent = visibleKeys.length;
     } else {
@@ -236,7 +414,7 @@
   }
   renderGrid();
 
-  // ---- MP3 encoding (same logic as editor) ----
+  // ---- MP3 encoding ----
   function mp3Available() { return !(typeof lamejs === 'undefined' || window._lamejsFailed); }
   function bufferToInt16Mono(buffer) {
     const ch = buffer.numberOfChannels, n = buffer.length;
@@ -270,8 +448,6 @@
     let pos = 0; for (const c of chunks) { merged.set(c, pos); pos += c.length; }
     return merged;
   }
-
-  // disable MP3 option if encoder failed to load
   setTimeout(() => {
     if (!mp3Available()) {
       const opt = document.getElementById('batchFormat').querySelector('option[value="mp3"]');

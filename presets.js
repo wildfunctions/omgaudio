@@ -287,11 +287,12 @@
       rv(0.5, 0.3),
     ], 0.4),
 
-    footstep_water: P('Footstep water', 'Wet splashy step.', ['footstep', 'movement'], [
+    footstep_water: withRandom(P('Footstep water', 'Wet splashy step with stereo ripple tail.', ['footstep', 'movement'], [
       noise('white'),
-      filter('lowpass', 2000, 1.5, { shape: 'ramp-down', dur: 100, depth: -1500 }),
-      env(2, 40, 150),
-    ], 0.4),
+      filter('lowpass', 2151, 6.4, { shape: 'ramp-down', dur: 159, depth: -1660 }),
+      env(26, 60, 271),
+      pp(51, 0.17, 0.33),
+    ], 0.4), { pitch: 0.195, time: 0.17, filter: 0.185, gain: 0 }),
 
     pacman: P('Pacman waka', 'Square-wave alternating low/high — "waka waka".', ['movement', 'chiptune'], [
       tone('square', [{ t: 0, freq: "B3" }, { t: 60, freq: "B4" }, { t: 120, freq: "B3" }, { t: 180, freq: "B4" }]),
