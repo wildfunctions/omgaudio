@@ -193,7 +193,7 @@
       ui: () => [
         { type: 'note', text: '⚠ Lower Master gain before experimenting. High mod index (>15) + high carrier frequency or irrational ratios can produce piercing inharmonic content — start with modIndex 2–6 and modDecay >100ms, then explore.' },
         { key: 'waveform', label: 'Carrier wave', type: 'select', options: WAVEFORMS },
-        { key: 'points', label: 'Carrier freq points', type: 'jsonarea', height: 90, hint: '[{"t":ms,"freq":Hz or "A4"/"C#5"/"Bb3","ramp":"step|linear|exp"}]' },
+        { key: 'points', label: 'Carrier freq points', type: 'points' },
         { key: 'modRatio', label: 'Mod ratio', type: 'range', min: 0.1, max: 12, step: 0.05 },
         { key: 'modIndex', label: 'Mod index (depth)', type: 'range', min: 0, max: 40, step: 0.1 },
         { key: 'modDecay', label: 'Mod decay (ms)', type: 'range', min: 5, max: 4000, step: 1 },
@@ -258,7 +258,7 @@
       },
       ui: () => [
         { key: 'waveform', label: 'Waveform', type: 'select', options: WAVEFORMS },
-        { key: 'points', label: 'Frequency points', type: 'jsonarea', height: 90, hint: '[{"t":ms,"freq":Hz or "A4"/"C#5"/"Bb3","ramp":"step|linear|exp"}]' },
+        { key: 'points', label: 'Frequency points', type: 'points' },
         { key: 'vibratoRate', label: 'Vibrato rate (Hz)', type: 'range', min: 0, max: 30, step: 0.1 },
         { key: 'vibratoDepth', label: 'Vibrato depth (Hz)', type: 'range', min: 0, max: 200, step: 1 },
       ],

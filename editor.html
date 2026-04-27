@@ -137,6 +137,86 @@
     font-size: 12.5px; line-height: 1.5;
   }
 
+  /* points editor — row-based UI for tone/fm frequency points */
+  .points-editor {
+    flex-basis: 100%; margin: 4px 0;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 14px;
+  }
+  .points-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px; flex-wrap: wrap; gap: 8px;
+  }
+  .points-label { font-size: 13px; color: var(--text); font-weight: 600; }
+  .points-snaps { display: flex; gap: 14px; font-size: 11px; color: var(--text-muted); }
+  .points-snaps label {
+    width: auto; display: flex; align-items: center; gap: 5px;
+    cursor: pointer; user-select: none; color: var(--text-muted);
+  }
+  .points-snaps input[type=checkbox] { transform: scale(1.0); margin: 0; }
+  .points-rows {
+    display: flex; flex-direction: column; gap: 5px;
+    margin-bottom: 10px;
+  }
+  .points-row {
+    display: flex; gap: 6px; align-items: center;
+    font-family: ui-monospace, monospace; font-size: 12px;
+  }
+  .points-row .col-label {
+    font-size: 10px; color: var(--text-faint);
+    width: 14px; text-align: center; flex-shrink: 0;
+  }
+  .points-row .cell-t, .points-row .cell-f {
+    display: flex; align-items: center; gap: 3px; flex-shrink: 0;
+  }
+  .points-row input[type=text] {
+    background: var(--bg-card); color: var(--text);
+    border: 1px solid var(--border); padding: 5px 6px;
+    border-radius: 4px; font: inherit; font-family: ui-monospace, monospace;
+    box-sizing: border-box; text-align: center;
+  }
+  .points-row input.col-t { width: 64px; }
+  .points-row input.col-f { width: 60px; color: var(--accent-green); font-weight: 500; }
+  .points-row input:focus { outline: 0; border-color: var(--primary); }
+  .points-row select.col-r {
+    padding: 4px 8px; font-size: 11px; min-width: 76px; max-width: 76px; flex: 0 0 auto;
+  }
+  .points-row button.step {
+    padding: 4px 6px; font-size: 10px; min-width: 22px; line-height: 1;
+    background: var(--bg-elevated); color: var(--text-muted);
+    border: 1px solid var(--border); border-radius: 4px;
+    cursor: pointer; font-weight: 600;
+  }
+  .points-row button.step:hover {
+    background: var(--bg-card); color: var(--primary);
+    border-color: var(--primary-border); transform: none;
+  }
+  .points-row button.step:active { transform: scale(0.92); }
+  .points-row button.icon { padding: 4px 8px; }
+  .points-row .col-spacer { flex: 1; min-width: 8px; }
+  .points-add {
+    background: transparent; color: var(--text-muted);
+    border: 1px dashed var(--border-strong);
+    padding: 7px 14px; font-size: 12px; font-weight: 500; width: 100%;
+  }
+  .points-add:hover {
+    background: var(--primary-bg); color: var(--primary);
+    border-color: var(--primary); border-style: solid;
+    transform: none;
+  }
+  .points-headings {
+    display: flex; gap: 6px;
+    font-size: 10px; color: var(--text-faint);
+    text-transform: uppercase; letter-spacing: 0.8px;
+    margin-bottom: 4px; padding-left: 20px;
+  }
+  .points-headings .h-t { width: 116px; }   /* button + input + button */
+  .points-headings .h-f { width: 112px; }
+  .points-headings .h-r { width: 76px; }
+  .points-hint {
+    font-size: 11px; color: var(--text-faint); margin-top: 6px; font-style: italic;
+  }
+
   /* knobs */
   .knob-cell { display: flex; flex-direction: column; align-items: center; padding: 2px; min-width: 76px; }
   .knob-cell .knob-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; text-align: center; max-width: 90px; line-height: 1.2; font-weight: 500; }
@@ -797,6 +877,9 @@
       });
       return knob.element;
     }
+    if (ctrl.type === 'points') {
+      return renderPointsControl(params, ctrl);
+    }
     const row = document.createElement('div');
     row.className = 'row';
     const lbl = document.createElement('label');
@@ -840,6 +923,245 @@
       row.appendChild(ta);
     }
     return row;
+  }
+
+  // ---- points (frequency-points row editor) ----
+  const _NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  function midiToNote(midi) {
+    const m = Math.round(midi);
+    const oct = Math.floor(m / 12) - 1;
+    return _NOTES[((m % 12) + 12) % 12] + oct;
+  }
+  function freqToMidi(hz) { return 69 + 12 * Math.log2(hz / 440); }
+
+  // per-control snap state — survives renders within this editor session
+  const _snapState = new WeakMap();
+
+  function renderPointsControl(params, ctrl) {
+    const arr = Array.isArray(params[ctrl.key]) ? params[ctrl.key] : [];
+    if (!Array.isArray(params[ctrl.key])) params[ctrl.key] = arr;
+
+    let state = _snapState.get(arr);
+    if (!state) { state = { snapT: true, snapF: true, tStep: 50 }; _snapState.set(arr, state); }
+
+    const wrap = document.createElement('div');
+    wrap.className = 'points-editor';
+
+    // header: label + snap toggles
+    const header = document.createElement('div');
+    header.className = 'points-header';
+    const lbl = document.createElement('span');
+    lbl.className = 'points-label';
+    lbl.textContent = ctrl.label;
+    header.appendChild(lbl);
+
+    const snaps = document.createElement('div');
+    snaps.className = 'points-snaps';
+    const snapTLabel = document.createElement('label');
+    const snapTCb = document.createElement('input');
+    snapTCb.type = 'checkbox'; snapTCb.checked = state.snapT;
+    snapTCb.onchange = () => { state.snapT = snapTCb.checked; };
+    snapTLabel.appendChild(snapTCb);
+    snapTLabel.appendChild(document.createTextNode(' snap t to ' + state.tStep + 'ms'));
+    snaps.appendChild(snapTLabel);
+
+    const snapFLabel = document.createElement('label');
+    const snapFCb = document.createElement('input');
+    snapFCb.type = 'checkbox'; snapFCb.checked = state.snapF;
+    snapFCb.onchange = () => { state.snapF = snapFCb.checked; };
+    snapFLabel.appendChild(snapFCb);
+    snapFLabel.appendChild(document.createTextNode(' snap freq to notes'));
+    snaps.appendChild(snapFLabel);
+    header.appendChild(snaps);
+    wrap.appendChild(header);
+
+    // column headings
+    const headings = document.createElement('div');
+    headings.className = 'points-headings';
+    headings.innerHTML = '<span class="h-t">time (ms)</span><span class="h-f">freq</span><span class="h-r">ramp</span>';
+    wrap.appendChild(headings);
+
+    // rows container
+    const rowList = document.createElement('div');
+    rowList.className = 'points-rows';
+    wrap.appendChild(rowList);
+
+    function rerender() {
+      rowList.innerHTML = '';
+      arr.forEach((pt, idx) => rowList.appendChild(renderRow(pt, idx)));
+    }
+
+    function renderRow(pt, idx) {
+      const row = document.createElement('div');
+      row.className = 'points-row';
+
+      const idxLbl = document.createElement('span');
+      idxLbl.className = 'col-label';
+      idxLbl.textContent = String(idx + 1);
+      row.appendChild(idxLbl);
+
+      // ----- TIME CELL — [▼] [input] [▲] with live-input + scroll wheel -----
+      const tCell = document.createElement('div');
+      tCell.className = 'cell-t';
+      const tDown = document.createElement('button');
+      tDown.className = 'step'; tDown.textContent = '◀'; tDown.title = 'Step earlier';
+      const tIn = document.createElement('input');
+      tIn.type = 'text'; tIn.inputMode = 'numeric';
+      tIn.className = 'col-t'; tIn.value = String(pt.t || 0);
+      const tUp = document.createElement('button');
+      tUp.className = 'step'; tUp.textContent = '▶'; tUp.title = 'Step later';
+
+      const setT = (v) => {
+        pt.t = Math.max(0, Math.round(v));
+        tIn.value = pt.t;
+        onPatchChange();
+      };
+      const stepT = (dir, fine) => {
+        const s = state.snapT ? state.tStep : (fine ? 10 : 1);
+        const cur = pt.t || 0;
+        // when snapping and not aligned, snap-then-step in one move
+        if (state.snapT && (cur % state.tStep) !== 0) {
+          setT(dir > 0 ? Math.ceil(cur / state.tStep) * state.tStep
+                       : Math.floor(cur / state.tStep) * state.tStep);
+        } else setT(cur + s * dir);
+      };
+      // live update — commits on every keystroke (no rollback if focus lost)
+      tIn.addEventListener('input', () => {
+        const v = parseFloat(tIn.value);
+        if (Number.isFinite(v) && v >= 0) {
+          pt.t = Math.round(v); onPatchChange();
+        }
+      });
+      // snap on blur or Enter
+      tIn.addEventListener('blur', () => {
+        let v = Math.max(0, parseFloat(tIn.value) || 0);
+        if (state.snapT) v = Math.round(v / state.tStep) * state.tStep;
+        setT(v);
+      });
+      tIn.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowUp')   { e.preventDefault(); stepT( 1, e.shiftKey); }
+        else if (e.key === 'ArrowDown') { e.preventDefault(); stepT(-1, e.shiftKey); }
+        else if (e.key === 'Enter') { tIn.blur(); }
+      });
+      tDown.onclick = () => stepT(-1, false);
+      tUp.onclick   = () => stepT( 1, false);
+      tCell.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        stepT(e.deltaY < 0 ? 1 : -1, e.shiftKey);
+      }, { passive: false });
+
+      tCell.appendChild(tDown);
+      tCell.appendChild(tIn);
+      tCell.appendChild(tUp);
+      row.appendChild(tCell);
+
+      // ----- FREQ CELL — [◀ note ▶] with live-input + scroll wheel -----
+      const fCell = document.createElement('div');
+      fCell.className = 'cell-f';
+      const fDown = document.createElement('button');
+      fDown.className = 'step'; fDown.textContent = '◀'; fDown.title = 'Down ' + (state.snapF ? 'semitone' : '1 Hz');
+      const fIn = document.createElement('input');
+      fIn.type = 'text'; fIn.className = 'col-f';
+      fIn.value = pt.freq != null ? pt.freq : 'A4';
+      const fUp = document.createElement('button');
+      fUp.className = 'step'; fUp.textContent = '▶'; fUp.title = 'Up ' + (state.snapF ? 'semitone' : '1 Hz');
+
+      const stepF = (dir, fine) => {
+        const hz = E.freqOf(pt.freq);
+        if (state.snapF) {
+          const midi = freqToMidi(hz);
+          pt.freq = midiToNote(Math.round(midi) + dir);
+        } else {
+          const inc = fine ? 10 : 1;
+          pt.freq = Math.max(1, Math.round(hz + inc * dir));
+        }
+        fIn.value = pt.freq;
+        onPatchChange();
+      };
+      fIn.addEventListener('input', () => {
+        const v = fIn.value.trim();
+        if (v && E.noteToFreq(v) != null) {
+          pt.freq = v; onPatchChange();
+        }
+      });
+      fIn.addEventListener('blur', () => {
+        if (E.noteToFreq(pt.freq) == null) {
+          pt.freq = 'A4'; fIn.value = 'A4'; onPatchChange();
+        } else {
+          fIn.value = pt.freq;  // normalize display
+        }
+      });
+      fIn.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowUp')   { e.preventDefault(); stepF( 1, e.shiftKey); }
+        else if (e.key === 'ArrowDown') { e.preventDefault(); stepF(-1, e.shiftKey); }
+        else if (e.key === 'Enter') { fIn.blur(); }
+      });
+      fDown.onclick = () => stepF(-1, false);
+      fUp.onclick   = () => stepF( 1, false);
+      fCell.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        stepF(e.deltaY < 0 ? 1 : -1, e.shiftKey);
+      }, { passive: false });
+
+      fCell.appendChild(fDown);
+      fCell.appendChild(fIn);
+      fCell.appendChild(fUp);
+      row.appendChild(fCell);
+
+      // ----- RAMP -----
+      const rSel = document.createElement('select');
+      rSel.className = 'col-r';
+      ['step', 'linear', 'exp'].forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r; opt.textContent = r;
+        if ((pt.ramp || 'step') === r) opt.selected = true;
+        rSel.appendChild(opt);
+      });
+      rSel.addEventListener('change', () => {
+        if (rSel.value === 'step') delete pt.ramp;
+        else pt.ramp = rSel.value;
+        onPatchChange();
+      });
+      row.appendChild(rSel);
+
+      const spacer = document.createElement('div'); spacer.className = 'col-spacer';
+      row.appendChild(spacer);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'icon';
+      delBtn.textContent = '×';
+      delBtn.title = 'Remove point';
+      delBtn.disabled = arr.length <= 1;
+      delBtn.onclick = () => {
+        if (arr.length <= 1) return;
+        arr.splice(idx, 1);
+        rerender(); onPatchChange();
+      };
+      row.appendChild(delBtn);
+
+      return row;
+    }
+
+    // add note button
+    const addBtn = document.createElement('button');
+    addBtn.className = 'points-add';
+    addBtn.textContent = '+ Add note';
+    addBtn.onclick = () => {
+      const last = arr[arr.length - 1] || { t: 0, freq: 'A4' };
+      const tStep = state.tStep;
+      const nextT = (last.t || 0) + (state.snapT ? tStep * 5 : 100);
+      arr.push({ t: nextT, freq: last.freq });
+      rerender(); onPatchChange();
+    };
+    wrap.appendChild(addBtn);
+
+    const hint = document.createElement('div');
+    hint.className = 'points-hint';
+    hint.textContent = 'Click ◀▶ to step. Scroll wheel works on time and freq cells. Type directly for any value. Shift = ×10.';
+    wrap.appendChild(hint);
+
+    rerender();
+    return wrap;
   }
 
   // ---- preset I/O ----
